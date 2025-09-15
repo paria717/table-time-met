@@ -1,1 +1,114 @@
 /* You can add global styles to this file, and also import other style files */
+/* @import "tailwindcss"; */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  @font-face {
+    font-family: "Yekan Bakh light";
+    font-style: normal;
+    font-weight: 300;
+    src: url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Light.woff") format("woff"),
+      url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-Light.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Yekan Bakh regular";
+    font-style: normal;
+    font-weight: normal;
+    src: url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Regular.woff") format("woff"),
+      url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-Regular.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Yekan Bakh semiBold";
+    font-style: normal;
+    font-weight: 600;
+    src: url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-SemiBold.woff") format("woff"),
+      url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-SemiBold.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Yekan Bakh bold";
+    font-style: normal;
+    font-weight: bold;
+    src: url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Bold.woff") format("woff"),
+      url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-Bold.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Yekan Bakh extraBold";
+    font-style: normal;
+    font-weight: 800;
+    src: url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-ExtraBold.woff") format("woff"),
+      url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-ExtraBold.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Yekan Bakh extraBlack";
+    font-style: normal;
+    font-weight: 950;
+    src: url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-ExtraBlack.woff") format("woff"),
+      url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-ExtraBlack.woff2") format("woff2");
+    font-display: swap;
+  }
+
+  body {
+    font-family: "Yekan Bakh regular", sans-serif;
+
+  }
+
+}
+
+@layer components {
+  :host {
+    @apply block;
+  }
+
+  .card {
+    @apply border border-gray-200 rounded-xl p-3 mb-4;
+  }
+
+  .title {
+    @apply m-0 mb-2 text-base font-semibold;
+  }
+
+  .scroll {
+    @apply max-h-[420px] overflow-auto;
+  }
+
+  table {
+    @apply w-full border-collapse;
+  }
+
+  th,
+  td {
+    @apply border border-gray-200 px-2 py-1.5 whitespace-nowrap text-center;
+  }
+
+  thead th {
+    @apply bg-gray-100 sticky top-0 z-10;
+  }
+
+  .empty {
+    @apply text-gray-400 p-3 text-center;
+  }
+
+  .loading {
+    @apply text-gray-500 p-2 text-center;
+  }
+
+  .toolbar {
+    @apply flex gap-2 items-center mb-2;
+  }
+
+  .toolbar input {
+    @apply border border-gray-200 px-2 py-1 rounded-lg w-40;
+  }
+}
