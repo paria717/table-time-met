@@ -1,0 +1,5 @@
+{
+  "production": false,  
+  "apiUrllocal": "https://localhost:7209/", 
+  "apiUrlserver": "https://localhost:7209/"
+}

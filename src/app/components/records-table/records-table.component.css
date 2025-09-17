@@ -1,0 +1,55 @@
+.dir-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 9999px;
+    background: #fff;
+}
+
+.dir-toggle .chip {
+    padding: 3px 8px;
+    border-radius: 9999px;
+    font-size: 12px;
+    background: #f3f4f6;
+}
+
+.dir-toggle .chip-active {
+    background: #111827;
+    color: #fff;
+}
+
+.dir-toggle .icon {
+    width: 20px;
+    height: 20px;
+    transition: transform .2s ease;
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}
+/* 
+.filter-input {
+    display: block;
+    width: 100%;
+    height: 48px;
+    /* 👈 ارتفاع هم‌اندازه td ها */
+    /* padding: 0 10px;
+    font-size: 15px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px; */
+    /* box-sizing: border-box; */
+/* } */ 
+
+/* ورودی غیرفعال (disabled)
+.filter-input:disabled {
+    border: none;
+    /* 👈 بدون border */
+    /* background: transparent; */
+    /* 👈 بک‌گراند شفاف */
+    /* text-align: center;
+    font-size: 12px;
+    color: #9ca3af; */
+    /* gray-400 */
+/* } */ 

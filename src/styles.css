@@ -61,18 +61,154 @@
 
   body {
     font-family: "Yekan Bakh regular", sans-serif;
-
+    direction: rtl;
+    @apply overflow-x-hidden;
   }
 
 }
+/* تیتر و سلول‌ها بزرگ‌تر و خواناتر */
+.thcell {
+  padding: 12px 16px;  /* px-4 py-3 */
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+}
+.tdcell {
+  padding: 12px 16px;
+  white-space: nowrap; /* اگر می‌خوای متن بشکنه، این خط رو بردار */
+}
+
+/* اینپوت فیلتر – ارتفاع و فونت مناسب */
+/* /* ستون‌های متنی (فیلترهای اصلی) عریض‌تر */
+.thcell {
+  padding: 10px;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.tdcell {
+  padding: 10px;
+  white-space: nowrap;
+}
+
+/* عرض پیش‌فرض برای ستون‌های فیلتر اصلی */
+.col-filter {
+  min-width: 160px;   /* 👈 اینو می‌تونی با آزمون و خطا تغییر بدی */
+}
+
+/* ورودی‌ها */
+.filter-input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  font-size: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.filter-input:disabled {
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.filter-input:focus {
+  border-color: #60a5fa;          /* blue-400 */
+  box-shadow: 0 0 0 1px #93c5fd55;/* ring */
+}
+
+/* ستون ردیف باریک */
+.col-row {
+  width: 56px;         /* w-14 */
+  min-width: 56px;
+  max-width: 56px;
+}
+
+/* ستون‌های ایستگاه کمی عریض‌تر که محتوا نفس بکشه */
+.col-station {
+  min-width: 112px;    /* ~min-w-28 */
+}
+
+/* دکمه تغییر جهت */
+.dir-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  padding: 0 12px;
+  height: 40px;
+  background: white;
+}
+.chip {
+  font-size: 0.875rem;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+.chip-active {
+  background: #2563eb; /* blue-600 */
+  color: #fff;
+}
+.icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.2s ease;
+}
+.rotate-180 { transform: rotate(180deg); }
+
 
 @layer components {
   :host {
     @apply block;
   }
 
+  /* سلول‌های تیتر/داده – بزرگ‌تر و خواناتر */
+  .thcell {
+    @apply px-4 py-3 font-semibold whitespace-nowrap border-b;
+  }
+
+  .tdcell {
+    @apply px-4 py-3 whitespace-nowrap;
+  }
+
+  /* اینپوت فیلتر – قد بلندتر، فونت بزرگتر، فوکوس مشخص */
+  .filter-input {
+    @apply w-full h-10 px-3 text-base border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400;
+  }
+
+  /* دکمه سوییچ جهت؛ اگر قبلاً داشتی، همون بمونه */
+  .dir-toggle {
+    @apply inline-flex items-center gap-2 border rounded-full px-3 h-10 hover:bg-gray-50;
+  }
+
+  .chip {
+    @apply text-sm px-2 py-0.5 rounded-full;
+  }
+
+  .chip-active {
+    @apply bg-blue-600 text-white;
+  }
+
+  .icon {
+    @apply w-5 h-5 transition-transform;
+  }
+
+  .rotate-180 {
+    transform: rotate(180deg);
+  }
+
   .card {
-    @apply border border-gray-200 rounded-xl p-3 mb-4;
+
+    @apply border-collapse border-gray-200 rounded-xl p-1 mb-4 w-full;
+  }
+
+  .input {
+    @apply border border-gray-200 px-2 py-1 rounded-lg w-40
   }
 
   .title {
@@ -80,16 +216,17 @@
   }
 
   .scroll {
-    @apply max-h-[420px] overflow-auto;
+    @apply overflow-auto max-h-[90vh];
   }
 
   table {
-    @apply w-full border-collapse;
+    @apply w-full table-fixed border-collapse;
   }
 
   th,
   td {
-    @apply border border-gray-200 px-2 py-1.5 whitespace-nowrap text-center;
+    @apply border border-gray-200 px-2 py-1.5 whitespace-normal text-center text-xs;
+
   }
 
   thead th {
@@ -110,5 +247,21 @@
 
   .toolbar input {
     @apply border border-gray-200 px-2 py-1 rounded-lg w-40;
+  }
+
+  .dir-toggle {
+    @apply inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1 shadow-sm hover:shadow transition;
+  }
+
+  .dir-toggle .chip {
+    @apply rounded-full px-2.5 py-1 text-xs text-gray-700 bg-gray-100 transition;
+  }
+
+  .dir-toggle .chip-active {
+    @apply bg-indigo-600 text-white;
+  }
+
+  .dir-toggle .icon {
+    @apply h-4 w-4 transition-transform;
   }
 }

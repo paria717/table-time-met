@@ -11,14 +11,63 @@
     <button (click)="clearDateFilter()" class="border px-3 py-1 rounded">
       حذف فیلتر تاریخ
     </button>
-
+    <!-- <label> فیلتر شماره قطار :
+      <input type="number" placeholder="مثال:331" (change)="onTrainNoFilter($event)"
+        (keyup.enter)="onTrainNoFilter($event) " class="input">
+    </label>
+    <button type="button" (click)="clearTrainNoFilter()">پاک کردن شماره قطار</button> -->
     <button (click)="reload()" class="border px-3 py-1 rounded">
       بازخوانی
     </button>
+    <button type="button" class="dir-toggle" (click)="toggleDirection()"
+      [attr.aria-label]="activeDirection === 2 ? 'کلاهدوز به علامه جعفری' : 'علامه جعفری به کلاهدوز'">
+      <span class="chip" [class.chip-active]="activeDirection === 2">کلاهدوز</span>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" [class.rotate-180]="activeDirection === 1">
+        <path d="M9 5l7 7-7 7"></path>
+      </svg>
+      <span class="chip" [class.chip-active]="activeDirection === 1">علامه جعفری</span>
+    </button>
   </div>
-
-  <!-- جدول 1 -->
   <div class="card">
+    <section>
+      <!-- جدول 1 -->
+      <div class="table-wrap scroll" #root1 *ngIf="activeDirection === 1">
+        <table>
+          <thead>
+            <tr>
+              <th *ngFor="let k of visibleKeysTable1">{{ labelOf(k) }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of dir1Shown; trackBy: trackByIndex">
+              <td *ngFor="let k of visibleKeysTable1">{{ row[k] }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div #sentinel1 class="sentinel"></div>
+      </div>
+
+      <!-- جدول 2 -->
+      <div class="table-wrap scroll" #root2 *ngIf="activeDirection === 2">
+        <table>
+          <thead>
+            <tr>
+              <th *ngFor="let k of visibleKeysTable2">{{ labelOf(k) }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of dir2Shown; trackBy: trackByIndex">
+              <td *ngFor="let k of visibleKeysTable2">{{ row[k] }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div #sentinel2 class="sentinel"></div>
+      </div>
+    </section>
+  </div>
+  <!-- جدول 1 -->
+  <!-- <div class="card">
     <h3 class="title">کلاهدوز به علامه جعفری</h3>
     <div class="scroll" #root1>
       <ng-container *ngIf="dir1Shown.length; else empty1">
@@ -75,10 +124,10 @@
         <div class="loading" *ngIf="loading">در حال بارگذاری...</div>
       </ng-template>
     </div>
-  </div>
+  </div> -->
 
   <!-- جدول 2 -->
-  <div class="card">
+  <!-- <div class="card">
     <h3 class="title">علامه جعفری به کلاهدوز</h3>
     <div class="scroll" #root2>
       <ng-container *ngIf="dir2Shown.length; else empty2">
@@ -133,5 +182,5 @@
         <div class="loading" *ngIf="loading">در حال بارگذاری...</div>
       </ng-template>
     </div>
-  </div>
+  </div> -->
 </section>
