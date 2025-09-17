@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { RecordsService, ApiItem } from '../../services/records.service';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 type Filters = {
   dataType?: string | number;   // عددی (اختیاری)
@@ -18,9 +19,16 @@ type Column = { key: keyof ApiItem; title: string };
   imports: [CommonModule],
   templateUrl: './records-table.component.html',
   styleUrls: ['./records-table.component.css'],
- 
+
 })
 export class RecordsTableComponent implements OnInit, OnDestroy {
+
+
+
+
+  openDetails(r: ApiItem) {
+    this.router.navigate(['/records-chart'], { state: { record: r } });
+  }
   // جهت فعال: 1 → Dir1 (کلاهدوز→علامه جعفری) | 2 → Dir2 (علامه جعفری→کلاهدوز)
   activeDirection = signal<1 | 2>(2);
 
@@ -95,7 +103,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
 
   // صفحه‌بندی
   pageNumber = signal(1);          // 1-based
-  pageSize = signal(10);
+  pageSize = signal(20);
   totalCount = signal(0);
   isLoading = signal(false);
 
@@ -109,7 +117,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   private filterChange$ = new Subject<Partial<Filters>>();
   private destroy$ = new Subject<void>();
 
-  constructor(private api: RecordsService) { }
+  constructor(private api: RecordsService, private router: Router) { }
 
   ngOnInit(): void {
     // تغییر فیلترها با debounce → صفحه 1 → لود
@@ -170,7 +178,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
       });
   }
 
- onFilterInput(field: keyof Filters, ev: Event) {
+  onFilterInput(field: keyof Filters, ev: Event) {
     const value = (ev.target as HTMLInputElement)?.value ?? '';
     this.onFilterChange(field, value);
   } onFilterSelect(field: keyof Filters, ev: Event) {
@@ -214,43 +222,43 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
- onFilterChange(field: keyof Filters, value: string) {
+  onFilterChange(field: keyof Filters, value: string) {
     this.filterChange$.next({ [field]: value });
   }
 
-showFilters = signal(true); // پیش‌فرض: فیلترها باز باشن
-toggleFilters() {
-  this.showFilters.update(v => !v);
-}
+  showFilters = signal(true); // پیش‌فرض: فیلترها باز باشن
+  toggleFilters() {
+    this.showFilters.update(v => !v);
+  }
 
- onDateInput(ev: Event) {
+  onDateInput(ev: Event) {
     let v = (ev.target as HTMLInputElement).value || '';
 
     const faDigits = '۰۱۲۳۴۵۶۷۸۹';
     const arDigits = '٠١٢٣٤٥٦٧٨٩';
     v = v.replace(/[۰-۹]/g, d => String(faDigits.indexOf(d)))
-         .replace(/[٠-٩]/g, d => String(arDigits.indexOf(d)));
+      .replace(/[٠-٩]/g, d => String(arDigits.indexOf(d)));
 
     const digits = v.replace(/\D/g, '').slice(0, 8); // YYYYMMDD
     let out = digits;
-    if (digits.length > 4) out = digits.slice(0,4) + '/' + digits.slice(4);
-    if (digits.length > 6) out = out.slice(0,7) + '/' + out.slice(7);
+    if (digits.length > 4) out = digits.slice(0, 4) + '/' + digits.slice(4);
+    if (digits.length > 6) out = out.slice(0, 7) + '/' + out.slice(7);
 
     (ev.target as HTMLInputElement).value = out;
     this.onFilterChange('dateP', out);
   }
   resetFilters() {
-  // فیلترها رو پاک کن
-  this.filters = {};
+    // فیلترها رو پاک کن
+    this.filters = {};
 
-  // همه‌ی input ها و select ها رو خالی کن
-  const inputs = document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.filter-input');
-  inputs.forEach(el => el.value = '');
+    // همه‌ی input ها و select ها رو خالی کن
+    const inputs = document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.filter-input');
+    inputs.forEach(el => el.value = '');
 
-  // صفحه رو برگردون به 1 و لود دوباره
-  this.pageNumber.set(1);
-  this.loadData();
-}
+    // صفحه رو برگردون به 1 و لود دوباره
+    this.pageNumber.set(1);
+    this.loadData();
+  }
 
 
 }

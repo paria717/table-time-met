@@ -1,16 +1,18 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  // {
-  //   path: '',
-  //   loadComponent: () =>
-  //     import('./components/mimic-records-table/mimic-records-table')
-  //       .then(m => m.MimicLine4TableComponent)
-  // },
+{ path: '', pathMatch: 'full', redirectTo: 'records-table' },
     {
-    path: '',
+    path:'records-table' ,
     loadComponent: () =>
       import('./components/records-table/records-table.component')
         .then(m => m.RecordsTableComponent)
   },
+  {
+    path:'records-chart',
+    loadComponent: () =>
+      import('./components/records-chart/records-chart.component')
+        .then(m => m.RecordsChartComponent)
+  },
+    { path: '**', redirectTo: 'table' }
 ];

@@ -34,7 +34,7 @@
         <tr class="text-right bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
           <th class="thcell col-row text-center">
             <button type="button" class="px-2 h-7 border rounded-md bg-red-50 text-red-600 hover:bg-red-100 text-xs"
-              (click)="resetFilters()">
+              (click)="resetFilters(); $event.stopPropagation()">
               ✕
             </button>
             <!-- <input class="filter-input text-center" disabled placeholder="—" /> -->
@@ -75,7 +75,8 @@
           <td [attr.colspan]="columns.length" class="py-8 text-base">در حال بارگذاری…</td>
         </tr>
 
-        <tr *ngFor="let r of rows(); let i = index" class="border-b hover:bg-gray-50 even:bg-blue-50">
+        <tr *ngFor="let r of rows(); let i = index" class="border-b hover:bg-gray-50 even:bg-blue-50"
+          (click)="openDetails(r)" tabindex="0" role="button" (keyup.enter)="openDetails(r)">
           <td *ngFor="let c of columns; let ci = index" class="tdcell" [class.col-row]="ci === 0"
             [class.text-center]="ci === 0" [class.col-station]="ci > 4">
             {{ getCell(r, c.key) }}
