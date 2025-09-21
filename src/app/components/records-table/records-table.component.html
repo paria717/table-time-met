@@ -1,18 +1,36 @@
 <section class="container max-w-[95%] px-[10px] mx-auto space-y-1" dir="rtl">
+  <div class="flex items-center justify-between mb-4 text-base font-medium">
 
-  <div class="flex flex-wrap items-center justify-center gap-4 mb-4 text-base font-medium">
+    <button class="ml-2 bg-blue-50 rounded-lg px-4 py-2" (click)="openHelp()">راهنما</button>
+    <div *ngIf="showHelp" class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
+        <h2 class="text-xl font-bold mb-2">راهنما</h2>
 
-    <!-- دکمه تغییر جهت -->
-    <button type="button" class="dir-toggle scale-110" (click)="toggleDirection()"
-      [attr.aria-label]="activeDirection() === 2 ? 'کلاهدوز به علامه جعفری' : 'علامه جعفری به کلاهدوز'">
-      <span class="chip" [class.chip-active]="activeDirection() === 2">کلاهدوز</span>
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round" [class.rotate-180]="activeDirection() === 1">
-        <path d="M9 5l7 7-7 7"></path>
-      </svg>
-      <span class="chip" [class.chip-active]="activeDirection() === 1">علامه جعفری</span>
-    </button>
+        <p class="text-gray-700 leading-relaxed">
+
+        </p>
+
+        <div class="flex justify-end">
+          <button class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700" (click)="closeHelp()">
+            بستن
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 flex justify-center">
+      <button type="button" class="dir-toggle scale-110" (click)="toggleDirection()"
+        [attr.aria-label]="activeDirection() === 2 ? 'کلاهدوز به علامه جعفری' : 'علامه جعفری به کلاهدوز'">
+        <span class="chip" [class.chip-active]="activeDirection() === 2">کلاهدوز</span>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" [class.rotate-180]="activeDirection() === 1">
+          <path d="M9 5l7 7-7 7"></path>
+        </svg>
+        <span class="chip" [class.chip-active]="activeDirection() === 1">علامه جعفری</span>
+      </button>
+    </div>
   </div>
+
 
 
 
@@ -41,30 +59,38 @@
           </th>
           <!-- تاریخ (شمسی) با اسلش خودکار -->
           <th class="thcell col-filter">
-            <input class="filter-input" placeholder="مثلاً 1404/06/24" (input)="onDateInput($event)" />
+            <input name="dateP" class="filter-input" placeholder="مثلاً 1404/06/24" (input)="onDateInput($event)" />
           </th>
 
           <!-- شماره قطار -->
           <th class="thcell col-filter">
-            <input class="filter-input" placeholder=" مثلاً 330 " (input)="onFilterInput('trainNo', $event)" />
+            <!-- <input class="filter-input" placeholder=" مثلاً 330 " (input)="onFilterInput('trainNo', $event)" /> -->
+            <input name="trainNo" class="filter-input" placeholder="مثلاً 330"
+              (input)="onFilterInput('trainNo', $event)" />
           </th>
 
           <!-- نوع: Dropdown از خود داده‌ها -->
           <th class="thcell col-filter">
-            <select class="filter-input" (change)="onFilterSelect('dataTypeName', $event)">
+            <select name="dataType" class="filter-input" (change)="onFilterSelect('dataType', $event)">
               <option value="">— همه —</option>
-              <option *ngFor="let opt of dataTypeOptions()" [value]="opt">{{ opt }}</option>
+              <option *ngFor="let opt of dataTypeOptions()" [value]="opt.value">{{ opt.label }}</option>
             </select>
           </th>
 
-
+          <!-- نوع: Dropdown از خود داده‌ها -->
+          <th class="thcell col-filter">
+            <select name="dayType" class="filter-input" (change)="onFilterSelect('dayType', $event)">
+              <option value="">— همه —</option>
+              <option *ngFor="let opt of dayTypeOptions()" [value]="opt.value">{{ opt.label }}</option>
+            </select>
+          </th>
 
           <!-- <th class="thcell">
             <input class="filter-input" placeholder="عادی / تعطیل ..." (input)="onFilterInput('dayTypeName', $event)" />
           </th> -->
 
           <!-- فیلتر برای ایستگاه‌ها فعلاً نداریم -->
-          <th *ngFor="let _ of columns.slice(4)" class="thcell">
+          <th *ngFor="let _ of columns.slice(5)" class="thcell">
             <input class="filter-input" disabled placeholder="—" />
           </th>
         </tr>

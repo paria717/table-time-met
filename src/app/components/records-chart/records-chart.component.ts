@@ -2,7 +2,7 @@
 import { Component, inject, signal, computed, effect, ElementRef, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import Highcharts from 'highcharts';
+import Highcharts, { color } from 'highcharts';
 // import { RecordsService } from '../../services/records.service'; // اگر خواستی fallback API
 
 type KV = { label: string; value: string | number | null };
@@ -11,64 +11,22 @@ type KV = { label: string; value: string | number | null };
   standalone: true,
   selector: 'app-records-chart',
   imports: [CommonModule],
-  styles: [`
-    .card { @apply bg-white rounded-2xl shadow p-4; }
-    .kv  { @apply grid grid-cols-2 gap-y-2; }
-    .k   { @apply text-gray-500 font-medium; }
-    .v   { @apply font-semibold; }
-    .tbl { @apply min-w-full text-[15px] table-auto; }
-    .th  { @apply text-right bg-gray-50 sticky top-0 z-10 px-3 py-2; }
-    .td  { @apply px-3 py-2 border-b; }
-  `],
+
   template: `
-    <section class="container max-w-[1000px] mx-auto p-4 space-y-5" dir="rtl">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold">جزئیات رکورد</h2>
-        <button class="px-3 h-9 border rounded-md hover:bg-gray-50"
-                (click)="goBack()">بازگشت</button>
-      </div>
-<div class="card">
-  <h3 class="text-lg font-semibold mb-3">نمودار زمان بر حسب ایستگاه</h3>
-  <div #chartContainer class="w-full h-[420px]"></div>
-</div>
-      <!-- اطلاعات اصلی -->
-      <div class="card">
-        <h3 class="text-lg font-semibold mb-3">اطلاعات اصلی</h3>
-        <div class="kv">
-          <ng-container *ngFor="let item of meta()">
-            <div class="k">{{ item.label }}</div>
-            <div class="v">{{ item.value ?? '—' }}</div>
-          </ng-container>
-        </div>
-      </div>
+ <section class="w-screen h-screen p-10 m-0" dir="rtl">
+  <div class="flex items-center justify-between mb-4">
+  
+    <h3 class="text-lg" style="font-family: 'Yekan Bakh'">نمودار زمان بر حسب ایستگاه</h3>
+      <button class="px-3 h-9 border rounded-md hover:bg-gray-50"
+            (click)="goBack()">بازگشت</button>
+  </div>
 
-      <!-- ایستگاه‌ها -->
-      <div class="card">
-        <h3 class="text-lg font-semibold mb-3">ایستگاه‌ها (براساس جهت)</h3>
-        <div class="overflow-x-auto rounded-2xl border">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th class="th w-1/2">ایستگاه</th>
-                <th class="th w-1/2">زمان</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let s of stations()">
-                <td class="td">{{ s.label }}</td>
-                <td class="td">{{ s.value ?? '—' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div class="w-full h-full" >
+    <div #chartContainer class="w-full h-full"></div>
+  </div>
+</section>
 
-      <!-- JSON کامل برای دیباگ/نیازهای خاص -->
-      <details class="card">
-        <summary class="cursor-pointer select-none font-semibold">مشاهدهٔ JSON کامل</summary>
-        <pre class="mt-3 overflow-auto">{{ record() | json }}</pre>
-      </details>
-    </section>
+ 
   `
 })
 export class RecordsChartComponent {
@@ -88,15 +46,15 @@ export class RecordsChartComponent {
     id: 'شناسه',
     rowNum: 'ردیف',
     rowNum2: 'ردیف',
-    dataType: 'کد نوع',
-    dataTypeName: 'نوع',
+    dataType: ' نوع',
+    dataTypeName: 'عنوان نوع',
     direction: 'جهت',
     date: 'تاریخ (میلادی)',
     dateP: 'تاریخ (شمسی)',
     trainNo: 'شماره قطار',
     headway: 'فاصله سیر (Headway)',
-    dayType: 'کد نوع روز',
-    dayTypeName: 'نوع روز',
+    dayType: ' نوع روز',
+    dayTypeName: 'عنوان نوع روز',
     deptRank: 'اولویت حرکت',
     detail: 'توضیحات',
     createdUserId: 'کاربر ایجاد',
@@ -136,6 +94,14 @@ export class RecordsChartComponent {
     title: x.title
   }));
 
+  DATA_TYPE_MAP: Record<number, string> = {
+    1: 'زمان ورود',
+    2: 'زمان خروج',
+    3: 'میانگین',
+    4: 'تاخير',
+    5: 'تعجيل',
+    6: 'زمان ورود + خروج',
+  };
 
 
   constructor() {
@@ -144,6 +110,7 @@ export class RecordsChartComponent {
 
     if (st?.record) {
       this.record.set(st.record);
+
       this.id.set(st.record.id ?? st.record.Id ?? null);
       queueMicrotask(() => this.tryRenderChart());
     }
@@ -152,37 +119,41 @@ export class RecordsChartComponent {
       if (!this.record()) {
         // this.api.getById(+pid!).subscribe(r => { this.record.set(r); this.tryRenderChart(); });
       } else {
+        console.log('record', this.record());
+
         this.tryRenderChart();
       }
     });
   }
 
   // اطلاعات اصلی به صورت لیست Key-Value
-  meta = computed<KV[]>(() => {
-    const r = this.record();
-    if (!r) return [];
+  // meta = computed<KV[]>(() => {
+  //   const r = this.record();
+  //   if (!r) return [];
 
-    const keys: string[] = [
-      'id', 'rowNum', 'rowNum2', 'dataType', 'dataTypeName',
-      'direction', 'date', 'dateP', 'trainNo', 'headway',
-      'dayType', 'dayTypeName', 'deptRank',
-      'detail', 'createdUserId', 'createdDateTime',
-      'updatedUserId', 'updatedDateTime',
-      'deletedUserId', 'deletedDateTime', 'isDeleted'
-    ].filter(k => k in r);
+  //   const keys: string[] = [
+  //     'id', 'rowNum', 'rowNum2', 'dataType', 'dataTypeName',
+  //     'direction', 'date', 'dateP', 'trainNo', 'headway',
+  //     'dayType', 'dayTypeName', 'deptRank',
+  //     'detail', 'createdUserId', 'createdDateTime',
+  //     'updatedUserId', 'updatedDateTime',
+  //     'deletedUserId', 'deletedDateTime', 'isDeleted'
+  //   ].filter(k => k in r);
 
-    return keys.map(k => ({
-      label: this.metaLabels[k] ?? k,
-      value: r[k]
-    }));
-  });
+  //   return keys.map(k => ({
+  //     label: this.metaLabels[k] ?? k,
+  //     value: r[k]
+  //   }));
+  // });
 
   categories = computed<string[]>(() => {
     const r = this.record();
     if (!r) return [];
     const dir = Number(r.direction) === 1 ? 1 : 2;
     const titles = dir === 1 ? this.stationTitlesDir1 : this.stationTitlesDir2;
-    return titles.map(t => t.title);
+    let t = titles.map(t => t.title);
+    console.log('t', t);
+    return t;
   });
   seriesData = computed<(number | null)[]>(() => {
     const r = this.record();
@@ -194,7 +165,7 @@ export class RecordsChartComponent {
   chartTitle = computed<string>(() => {
     const r = this.record();
     const tn = r?.trainNo ?? '—';
-    const tp = r?.dataTypeName ?? '';
+    const tp = this.DATA_TYPE_MAP[r?.dataType] ?? '';
     return `قطار ${tn} - ${tp}`;
   });
   ngAfterViewInit(): void {
@@ -206,34 +177,121 @@ export class RecordsChartComponent {
     const r = this.record();
     if (!r) return;
 
-    const categories = this.categories();
-    const data = this.seriesData();
+    const titles = this.categories(); // نام ایستگاه‌ها
+    const dir = Number(r.direction) === 1 ? 1 : 2;
+    const titlesMeta = dir === 1 ? this.stationTitlesDir1 : this.stationTitlesDir2;
+
+    const points: any[] = [];
+
+    for (let i = 0; i < titlesMeta.length; i++) {
+      const key = titlesMeta[i].key;
+      const prevExit = i > 0 ? this.timeToMsWithDay(r[titlesMeta[i - 1].key + 'e']) : null;
+
+      // زمان ورود و خروج با احتساب روز بعد
+      const entryMs = this.timeToMsWithDay(r[key], prevExit);
+      const exitMs = this.timeToMsWithDay(r[key + 'e'], entryMs);
+
+      // محاسبه مدت توقف (dwell) مطمئن
+      let dwell: number | null = null;
+      if (entryMs !== null && exitMs !== null) {
+        dwell = exitMs - entryMs;
+        if (dwell < 0) dwell += 24 * 60 * 60 * 1000; // اطمینان از مثبت بودن
+      }
+
+      // محاسبه زمان سفر از ایستگاه قبلی
+      const travel = prevExit !== null && entryMs !== null ? entryMs - prevExit : null;
+
+      if (entryMs !== null) {
+        points.push({
+          x: entryMs,
+          y: i,
+          name: titles[i],
+          timeType: 'ورود',
+          travelFromPrev: travel,
+          stationKey: key,
+          marker: { symbol: 'circle', color: 'red' }
+        });
+      }
+
+      if (exitMs !== null) {
+        points.push({
+          x: exitMs,
+          y: i,
+          name: titles[i],
+          timeType: 'خروج',
+          stationKey: key + 'e',
+          dwell: dwell,
+          // travelFromPrev: travel,
+          marker: { symbol: 'square' }
+        });
+      }
+    }
+
+    points.sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
+
+    const formatDuration = (ms: number | null): string => {
+      if (ms === null || ms === undefined) return '—';
+      let totalSec = Math.floor(ms / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor(totalSec / 60) % 60;
+      const s = totalSec % 60;
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    };
+
+    const formatDurationInSeconds = (ms: number | null): string => {
+      if (ms === null || ms === undefined) return '';
+      return Math.floor(ms / 1000).toString();
+    };
 
     Highcharts.chart(this.chartEl.nativeElement, {
-      chart: { type: 'line', height: 420, style: { fontFamily: 'iransans, sans-serif' } },
+      chart: { type: 'line', style: { fontFamily: 'Yekan Bakh' } },
       title: { text: this.chartTitle() },
-      xAxis: { categories, tickmarkPlacement: 'on', title: { text: 'ایستگاه' } },
-      yAxis: {
-        type: 'datetime',
-        title: { text: 'زمان' },
-        labels: { format: '{value:%H:%M}' }
-      },
+      xAxis: { type: 'datetime', title: { text: 'زمان' }, labels: { format: '{value:%H:%M:%S}' }, },
+      yAxis: { title: { text: 'ایستگاه' }, categories: titles, reversed: false },
       tooltip: {
         useHTML: true,
-        formatter: function () {
-          const time = Highcharts.dateFormat('%H:%M:%S', Number(this.y));
-          return `<b>${this.x}</b><br/>${time}`;
+        formatter: function (this: any) {
+          const p = this.point ?? (this.points && this.points[0] && this.points[0].point) ?? null;
+          if (!p) return '';
+          const timeStr = p.x ? Highcharts.dateFormat('%H:%M:%S', p.x) : '—';
+          let html = `<b>${p.name ?? '—'}</b><br/>${p.timeType ?? ''}: ${timeStr}`;
+          if (p.dwell != null) html += `<br/>مدت توقف: ${formatDuration(p.dwell)}`;
+          if (p.travelFromPrev != null) html += `<br/>مدت مسیر: ${formatDuration(p.travelFromPrev)}`;
+          return html;
         }
       },
       plotOptions: {
-        series: { connectNulls: true, marker: { enabled: true } }
+        line: { connectNulls: true, marker: { enabled: true, radius: 4 } }
       },
       series: [{
         type: 'line',
-        name: 'زمان',
-        data
+        name: `مسیر (ورود/خروج) - قطار ${r.trainNo ?? '—'}`,
+        data: points.map(p => ({
+          x: p.x,
+          y: p.y,
+          name: p.name,
+          timeType: p.timeType,
+          dwell: p.dwell,
+          travelFromPrev: p.travelFromPrev,
+          marker: p.marker,
+          dataLabels: {
+            x: -22,
+            y: -5,
+            enabled: true,
+            align: 'left',
+            formatter: function (this: any) {
+              const dwell = this.point.dwell;
+              // const travel = this.point.travelFromPrev;
+              // if (this.point.timeType === 'خروج' && travel != null) return `⟵ ${formatDuration(travel)}`;
+              return dwell != null ? formatDurationInSeconds(dwell) : '';
+            },
+            style: { fontSize: '14px' }
+          }
+        }))
       }],
-      credits: { enabled: false }
+      credits: { enabled: false },
+      legend: { enabled: false }
     } as Highcharts.Options);
   }
 
@@ -258,8 +316,24 @@ export class RecordsChartComponent {
       value: r[t.key] ?? null
     }));
   });
+  private timeToMsWithDay(t?: string | null, prevMs?: number | null): number | null {
+    if (!t) return null;
+    const m = String(t).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!m) return null;
+    const h = +m[1], min = +m[2], s = +(m[3] ?? 0);
+    if (h > 47 || min > 59 || s > 59) return null;
+    let ms = ((h * 60 + min) * 60 + s) * 1000;
+
+    // اگر prevMs مشخص باشد و ms کمتر باشد، یعنی زمان به روز بعد منتقل شده
+    if (prevMs !== undefined && prevMs !== null && ms < prevMs) {
+      ms += 24 * 60 * 60 * 1000; // اضافه کردن یک روز
+    }
+
+    return ms;
+  }
 
   goBack() {
     history.length > 1 ? history.back() : window.close();
+
   }
 }

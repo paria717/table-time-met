@@ -3,15 +3,46 @@ import { RecordsService, ApiItem } from '../../services/records.service';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { FilterService } from '../../services/filter.service';
 
 type Filters = {
-  dataType?: string | number;   // عددی (اختیاری)
-  trainNo?: string | number;     // عددی (اختیاری)
-  dataTypeName?: string;         // متنی (اختیاری)
-  dayTypeName?: string;          // متنی (اختیاری)
-  dateP?: string;                // متنی (اختیاری) مثل 1404/06/24
+  dataType?: string | number;
+  trainNo?: string | number;
+  dataTypeName?: string;
+  dayTypeName?: string;
+
+  dayType?: string | number;
+  dateP?: string;
+
   [key: string]: string | number | undefined;
 };
+const DATA_TYPE_MAP: Record<number, string> = {
+  1: 'زمان ورود',
+  2: 'زمان خروج',
+  3: 'میانگین',
+  4: 'تاخير',
+  5: 'تعجيل',
+  6: 'زمان ورود + خروج',
+};
+const DAY_TYPE_MAP: Record<number, string> = {
+  1: 'عادی',
+  2: 'پنجشنبه',
+  3: 'جمعه'
+};
+const DATA_TYPE_OPTIONS_FIXED: { value: number; label: string }[] = [
+  { value: 1, label: DATA_TYPE_MAP[1] },
+  { value: 2, label: DATA_TYPE_MAP[2] },
+  { value: 3, label: DATA_TYPE_MAP[3] },
+  { value: 4, label: DATA_TYPE_MAP[4] },
+  { value: 5, label: DATA_TYPE_MAP[5] },
+  { value: 6, label: DATA_TYPE_MAP[6] },
+];
+const DAY_TYPE_OPTIONS_FIXED: { value: number; label: string }[] = [
+  { value: 1, label: DAY_TYPE_MAP[1] },
+  { value: 2, label: DAY_TYPE_MAP[2] },
+  { value: 3, label: DAY_TYPE_MAP[3] },
+
+];
 type Column = { key: keyof ApiItem; title: string };
 @Component({
   selector: 'app-records-table',
@@ -21,15 +52,14 @@ type Column = { key: keyof ApiItem; title: string };
   styleUrls: ['./records-table.component.css'],
 
 })
+
 export class RecordsTableComponent implements OnInit, OnDestroy {
-
-
-
-
+ currentFilter: any = null;
   openDetails(r: ApiItem) {
+    this.filterService.setFilter({ ...this.filters });
     this.router.navigate(['/records-chart'], { state: { record: r } });
   }
-  // جهت فعال: 1 → Dir1 (کلاهدوز→علامه جعفری) | 2 → Dir2 (علامه جعفری→کلاهدوز)
+
   activeDirection = signal<1 | 2>(2);
 
   private stationTitlesDir1: Column[] =
@@ -53,7 +83,8 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
       { key: 's134', title: 'بیمه' },
       { key: 's135', title: 'شهرک اکباتان' },
       { key: 's136', title: 'ارم سبز' },
-      { key: 's137', title: 'علامه جعفری' }
+      { key: 's137', title: 'علامه جعفری' },
+
     ];
 
   private stationTitlesDir2: Column[] = [
@@ -86,9 +117,13 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
 
       { key: 'dateP', title: 'تاریخ (شمسی)' },
       { key: 'trainNo', title: 'شماره قطار' },
-      { key: 'dataTypeName', title: 'نوع' },
-      { key: 'dayTypeName', title: 'نوع روز' }
+      { key: 'dataType', title: 'نوع' },
+      { key: 'dayType', title: 'نوع روز' },
+      { key: 'totalTirpTime', title: 'مدت زمان سفر' }
     ];
+    private isStationKey(key: string): key is `s${string}` {
+  return /^s\d{3}$/i.test(key);
+}
   get columns() {
     return [...(this.activeDirection() === 1 ? this.row1 : this.row2),
     ...this.baseColumns,
@@ -96,6 +131,27 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
     ];
   }
   getCell(row: ApiItem, key: keyof ApiItem) {
+    if (this.isStationKey(String(key))) {
+    const start = (row[key] as string | null | undefined) ?? null;
+    const endKey = (String(key) + 'e') as keyof ApiItem; // e.g. s134 -> s134e
+    const end = (row[endKey] as string | null | undefined) ?? null;
+
+    const a = start ?? '';
+    const b = end ?? '';
+
+   
+    if (start && end) return`${b} — ${a}`;
+
+   
+
+    return `${b}${a}`;
+  }
+    if (key === 'dataType' && row.dataType !== null) {
+      return DATA_TYPE_MAP[row.dataType] ?? row.dataType
+    }
+    if (key === 'dayType' && row.dayType !== null) {
+      return DAY_TYPE_MAP[row.dayType] ?? row.dayType
+    }
     // هر چیزی null/undefined بود، '—' برگردون
     const val = row[key] as unknown as string | number | null | undefined;
     return (val ?? '—');
@@ -110,16 +166,29 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   // دیتا
   rows = signal<ApiItem[]>([]);
 
-  dataTypeOptions = signal<string[]>([]);
 
+  dataTypeOptions = signal<{ value: number, label: string }[]>(DATA_TYPE_OPTIONS_FIXED);
+
+  dayTypeOptions = signal<{ value: number, label: string }[]>(DAY_TYPE_OPTIONS_FIXED);
   // فیلترها
   private filters: Filters = {};
   private filterChange$ = new Subject<Partial<Filters>>();
   private destroy$ = new Subject<void>();
 
-  constructor(private api: RecordsService, private router: Router) { }
+  constructor(private api: RecordsService, private router: Router,private filterService: FilterService) { }
 
   ngOnInit(): void {
+      const stored = this.filterService.getFilter();
+  if (stored) {
+    this.filters = { ...stored };
+    // set UI inputs if you use plain DOM inputs (you already query by .filter-input elsewhere)
+    setTimeout(() => {
+      Object.entries(this.filters).forEach(([k, v]) => {
+        const el = document.querySelector<HTMLInputElement | HTMLSelectElement>(`.filter-input[name="${k}"]`);
+        if (el) el.value = String(v ?? '');
+      });
+    }, 0);
+  }
     // تغییر فیلترها با debounce → صفحه 1 → لود
     this.filterChange$
       .pipe(
@@ -138,7 +207,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
 
   private buildFilters(): Record<string, string | number> {
     const f = this.filters;
-    const allowed = new Set(['dataType', 'trainNo', 'dataTypeName', 'dayTypeName', 'dateP']); // ← وایت‌لیست
+    const allowed = new Set(['dataType', 'trainNo', 'dataTypeName', 'dayTypeName', 'dayType', 'dateP']);
     const out: Record<string, string | number> = {};
 
     for (const [k, v] of Object.entries(f)) {
@@ -166,9 +235,6 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
         next: res => {
           this.rows.set(res.result ?? []);
 
-          const uniq = new Set<string>();
-          (this.rows() || []).forEach(r => { if (r?.dataTypeName) uniq.add(r.dataTypeName); });
-          this.dataTypeOptions.set([...uniq]);   // مثل: ["زمان ورود","زمان خروج"]
           this.totalCount.set(res.count ?? 0);
           this.isLoading.set(false);
 
@@ -258,7 +324,16 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
     // صفحه رو برگردون به 1 و لود دوباره
     this.pageNumber.set(1);
     this.loadData();
+      this.filterService.setFilter(null);
   }
+showHelp = false;
 
+openHelp() {
+  this.showHelp = true;
+}
+
+closeHelp() {
+  this.showHelp = false;
+}
 
 }

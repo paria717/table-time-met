@@ -4,130 +4,232 @@
 @tailwind base;
 
 /* --- External CSS before utilities so Tailwind utilities win --- */
-@import "primeicons/primeicons.css";
+/* @import "primeicons/primeicons.css";
 @import "primeng/resources/themes/lara-light-blue/theme.css";
-@import "primeng/resources/primeng.min.css";
+@import "primeng/resources/primeng.min.css"; */
 
 /* Then Tailwind components and utilities */
 @tailwind components;
 @tailwind utilities;
 
 /* Animations (می‌تونی اینا رو هم داخل components layer ببری، ولی عمومی هم اوکیه) */
-.animate-slidedown { animation: slidedown 0.2s ease-out both; }
-.animate-slideup   { animation: slideup 0.2s ease-in both; }
-@keyframes slidedown { from { max-height: 0; opacity: 0; } to { max-height: 500px; opacity: 1; } }
-@keyframes slideup   { from { max-height: 500px; opacity: 1; } to { max-height: 0; opacity: 0; } }
+.animate-slidedown {
+  animation: slidedown 0.2s ease-out both;
+}
+
+.animate-slideup {
+  animation: slideup 0.2s ease-in both;
+}
+
+@keyframes slidedown {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  to {
+    max-height: 500px;
+    opacity: 1;
+  }
+}
+
+@keyframes slideup {
+  from {
+    max-height: 500px;
+    opacity: 1;
+  }
+
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
 
 /* Base layer: فونت، RTL و resetهای کلی */
 @layer base {
+
   /* پیشنهاد: یک family واحد برای همه‌ی وزن‌ها */
   @font-face {
     font-family: "Yekan Bakh";
     font-style: normal;
     font-weight: 300;
     src: url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-Light.woff2") format("woff2"),
-         url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Light.woff") format("woff");
+      url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Light.woff") format("woff");
     font-display: swap;
   }
+
   @font-face {
     font-family: "Yekan Bakh";
     font-style: normal;
     font-weight: 400;
     src: url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-Regular.woff2") format("woff2"),
-         url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Regular.woff") format("woff");
+      url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Regular.woff") format("woff");
     font-display: swap;
   }
+
   @font-face {
     font-family: "Yekan Bakh";
     font-style: normal;
     font-weight: 600;
     src: url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-SemiBold.woff2") format("woff2"),
-         url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-SemiBold.woff") format("woff");
+      url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-SemiBold.woff") format("woff");
     font-display: swap;
   }
+
   @font-face {
     font-family: "Yekan Bakh";
     font-style: normal;
     font-weight: 700;
     src: url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-Bold.woff2") format("woff2"),
-         url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Bold.woff") format("woff");
+      url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-Bold.woff") format("woff");
     font-display: swap;
   }
+
   @font-face {
     font-family: "Yekan Bakh";
     font-style: normal;
     font-weight: 800;
     src: url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-ExtraBold.woff2") format("woff2"),
-         url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-ExtraBold.woff") format("woff");
+      url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-ExtraBold.woff") format("woff");
     font-display: swap;
   }
+
   @font-face {
     font-family: "Yekan Bakh";
     font-style: normal;
     font-weight: 950;
     src: url("./assets/fonts/Yekan-Bakh/woff2/YekanBakhFaNum-ExtraBlack.woff2") format("woff2"),
-         url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-ExtraBlack.woff") format("woff");
+      url("./assets/fonts/Yekan-Bakh/woff/YekanBakhFaNum-ExtraBlack.woff") format("woff");
     font-display: swap;
   }
 
-  html, body {
-    direction: rtl;
-  }
+:root { --app-font: "Yekan Bakh"}
 
-  body {
-    font-family: "Yekan Bakh", sans-serif;
-    @apply overflow-x-hidden;
-  }
+html, body, app-root {
+  direction: rtl;
+  font-family: var(--app-font);
+}
+ 
 }
 
 /* Components layer: فقط یک‌بار تعریفشون کن */
 @layer components {
+
   /* سلول‌های تیتر/داده */
-  .thcell { @apply px-4 py-3 font-semibold whitespace-nowrap border-b; }
-  .tdcell { @apply px-4 py-3 whitespace-nowrap; }
+  .thcell {
+    @apply px-4 py-3 font-semibold whitespace-nowrap border-b;
+  }
+
+  .tdcell {
+    @apply px-4 py-3 whitespace-nowrap;
+  }
 
   /* ستون‌ها */
-  .col-filter { min-width: 160px; }
-  .col-row { width: 56px; min-width: 56px; max-width: 56px; }
-  .col-station { min-width: 112px; }
+  .col-filter {
+    min-width: 160px;
+  }
+
+  .col-row {
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+  }
+
+  .col-station {
+    min-width: 112px;
+  }
 
   /* ورودی فیلتر */
   .filter-input {
-    @apply w-full h-10 px-3 text-[12px] border rounded-lg box-border
-           focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400;
-    border-color: #d1d5db; /* اگر نیاز به رنگ دقیق داشتی */
+    @apply w-full h-10 px-3 text-[12px] border rounded-lg box-border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-400;
+    border-color: #d1d5db;
+
   }
+
   .filter-input:disabled {
-    border: none; background: transparent; text-align: center; font-size: 10px; color: #9ca3af;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 10px;
+    color: #9ca3af;
   }
 
   /* دکمه سوییچ جهت */
-  .dir-toggle { @apply inline-flex items-center gap-2 border rounded-full px-3 h-10 bg-white hover:bg-gray-50; }
-  .chip { @apply text-sm px-2 py-0.5 rounded-full; }
-  .chip-active { @apply bg-blue-600 text-white; }
-  .icon { @apply w-5 h-5 transition-transform; }
-  .rotate-180 { transform: rotate(180deg); }
+  .dir-toggle {
+    @apply inline-flex items-center gap-2 border rounded-full px-3 h-10 bg-white hover:bg-gray-50;
+  }
+
+  .chip {
+    @apply text-sm px-2 py-0.5 rounded-full;
+  }
+
+  .chip-active {
+    @apply bg-blue-600 text-white;
+  }
+
+  .icon {
+    @apply w-5 h-5 transition-transform;
+  }
+
+  .rotate-180 {
+    transform: rotate(180deg);
+  }
 
   /* کارت/جعبه */
-  .card { @apply border border-gray-200 rounded-xl p-1 mb-4 w-full; } /* حذف border-collapse */
+  .card {
+    @apply border border-gray-200 rounded-xl p-1 mb-4 w-[100%] h-full;
+  }
 
-  .input { @apply border border-gray-200 px-2 py-1 rounded-lg w-40; }
+  /* حذف border-collapse */
 
-  .title { @apply m-0 mb-2 text-base font-semibold; }
+  .input {
+    @apply border border-gray-200 px-2 py-1 rounded-lg w-40;
+  }
 
-  .scroll { @apply overflow-auto max-h-[90vh]; }
+  .title {
+    @apply m-0 mb-2 text-base font-semibold;
+  }
 
-  table { @apply w-full table-fixed border-collapse; }
-  th, td { @apply border border-gray-200 px-2 py-1.5 whitespace-normal text-center text-xs; }
-  thead th { @apply bg-gray-100 sticky top-0 z-10; }
+  .scroll {
+    @apply overflow-auto max-h-[90vh];
+  }
 
-  .empty { @apply text-gray-400 p-3 text-center; }
-  .loading { @apply text-gray-500 p-2 text-center; }
+  table {
+    @apply w-full table-fixed border-collapse;
+  }
 
-  .toolbar { @apply flex gap-2 items-center mb-2; }
-  .toolbar input { @apply border border-gray-200 px-2 py-1 rounded-lg w-40; }
-.side-link { @apply text-gray-700 transition; }
-  .side-link:hover { @apply bg-gray-100; }
+  th,
+  td {
+    @apply border border-gray-200 px-2 py-1.5 whitespace-normal text-center text-xs;
+  }
+
+  thead th {
+    @apply bg-gray-100 sticky top-0 z-10;
+  }
+
+  .empty {
+    @apply text-gray-400 p-3 text-center;
+  }
+
+  .loading {
+    @apply text-gray-500 p-2 text-center;
+  }
+
+  .toolbar {
+    @apply flex gap-2 items-center mb-2;
+  }
+
+  .toolbar input {
+    @apply border border-gray-200 px-2 py-1 rounded-lg w-40;
+  }
+
+  .side-link {
+    @apply text-gray-700 transition;
+  }
+
+  .side-link:hover {
+    @apply bg-gray-100;
+  }
 
   /* .dark .side-link { @apply text-gray-100; }
   .dark .side-link:hover { @apply bg-gray-700; }
