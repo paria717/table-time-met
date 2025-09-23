@@ -1,9 +1,11 @@
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
-import { RecordsService, ApiItem } from '../../services/records.service';
+import { RecordsService, } from '../../services/records.service';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FilterService } from '../../services/filter.service';
+import { RecordItemsDto } from '../../domain/';
+import { DATA_TYPE_MAP, DATA_TYPE_OPTIONS_FIXED, DAY_TYPE_MAP, DAY_TYPE_OPTIONS_FIXED } from '../../constants/index';
 
 type Filters = {
   dataType?: string | number;
@@ -13,37 +15,26 @@ type Filters = {
 
   dayType?: string | number;
   dateP?: string;
-
+  dispatchNo?:string| number | undefined;
   [key: string]: string | number | undefined;
 };
-const DATA_TYPE_MAP: Record<number, string> = {
-  1: 'زمان ورود',
-  2: 'زمان خروج',
-  3: 'میانگین',
-  4: 'تاخير',
-  5: 'تعجيل',
-  6: 'زمان ورود + خروج',
-};
-const DAY_TYPE_MAP: Record<number, string> = {
-  1: 'عادی',
-  2: 'پنجشنبه',
-  3: 'جمعه'
-};
-const DATA_TYPE_OPTIONS_FIXED: { value: number; label: string }[] = [
-  { value: 1, label: DATA_TYPE_MAP[1] },
-  { value: 2, label: DATA_TYPE_MAP[2] },
-  { value: 3, label: DATA_TYPE_MAP[3] },
-  { value: 4, label: DATA_TYPE_MAP[4] },
-  { value: 5, label: DATA_TYPE_MAP[5] },
-  { value: 6, label: DATA_TYPE_MAP[6] },
-];
-const DAY_TYPE_OPTIONS_FIXED: { value: number; label: string }[] = [
-  { value: 1, label: DAY_TYPE_MAP[1] },
-  { value: 2, label: DAY_TYPE_MAP[2] },
-  { value: 3, label: DAY_TYPE_MAP[3] },
 
-];
-type Column = { key: keyof ApiItem; title: string };
+
+// const DATA_TYPE_OPTIONS_FIXED: { value: number; label: string }[] = [
+//   { value: 1, label: DATA_TYPE_MAP[1] },
+//   { value: 2, label: DATA_TYPE_MAP[2] },
+//   { value: 3, label: DATA_TYPE_MAP[3] },
+//   { value: 4, label: DATA_TYPE_MAP[4] },
+//   { value: 5, label: DATA_TYPE_MAP[5] },
+//   { value: 6, label: DATA_TYPE_MAP[6] },
+// ];
+// const DAY_TYPE_OPTIONS_FIXED: { value: number; label: string }[] = [
+//   { value: 1, label: DAY_TYPE_MAP[1] },
+//   { value: 2, label: DAY_TYPE_MAP[2] },
+//   { value: 3, label: DAY_TYPE_MAP[3] },
+
+// ];
+type Column = { key: keyof RecordItemsDto; title: string };
 @Component({
   selector: 'app-records-table',
   standalone: true,
@@ -54,10 +45,32 @@ type Column = { key: keyof ApiItem; title: string };
 })
 
 export class RecordsTableComponent implements OnInit, OnDestroy {
- currentFilter: any = null;
-  openDetails(r: ApiItem) {
+  currentFilter: any = null;
+
+  private pick3NeighborsAround(row: RecordItemsDto): RecordItemsDto[] {
+    const list = this.rows();
+    const idx = list.findIndex(x => x.id === row.id || x.id === row.id);
+    if (idx < 0) return [row];
+
+    // تلاش: از idx تا idx+3 (خودِ ردیف + دو ردیف بعدی)
+    let chunk = list.slice(idx, idx + 3);
+
+    // اگر به انتهای صفحه خورد و کمتر از 3 شد، از قبلش پر کن تا بشه 3تا
+    if (chunk.length < 3) {
+      const deficit = 3 - chunk.length;
+      const start = Math.max(0, idx - deficit);
+      chunk = list.slice(start, idx).concat(chunk);
+    }
+    // در نهایت فقط 3تا
+    return chunk.slice(0, 3);
+  }
+
+
+
+  openDetails(r: RecordItemsDto) {
     this.filterService.setFilter({ ...this.filters });
-    this.router.navigate(['/records-chart'], { state: { record: r } });
+    const bundle = this.pick3NeighborsAround(r);
+    this.router.navigate(['/records-chart'], { state: { records: bundle } });
   }
 
   activeDirection = signal<1 | 2>(2);
@@ -114,38 +127,39 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   // ستون‌های ثابت
   private baseColumns: Column[]
     = [
-
+      { key: 'dispatchNo', title: 'شماره اعزام' },
       { key: 'dateP', title: 'تاریخ (شمسی)' },
+
       { key: 'trainNo', title: 'شماره قطار' },
       { key: 'dataType', title: 'نوع' },
       { key: 'dayType', title: 'نوع روز' },
       { key: 'totalTirpTime', title: 'مدت زمان سفر' }
     ];
-    private isStationKey(key: string): key is `s${string}` {
-  return /^s\d{3}$/i.test(key);
-}
+  private isStationKey(key: string): key is `s${string}` {
+    return /^s\d{3}$/i.test(key);
+  }
   get columns() {
     return [...(this.activeDirection() === 1 ? this.row1 : this.row2),
     ...this.baseColumns,
     ...(this.activeDirection() === 1 ? this.stationTitlesDir1 : this.stationTitlesDir2)
     ];
   }
-  getCell(row: ApiItem, key: keyof ApiItem) {
+  getCell(row: RecordItemsDto, key: keyof RecordItemsDto) {
     if (this.isStationKey(String(key))) {
-    const start = (row[key] as string | null | undefined) ?? null;
-    const endKey = (String(key) + 'e') as keyof ApiItem; // e.g. s134 -> s134e
-    const end = (row[endKey] as string | null | undefined) ?? null;
+      const start = (row[key] as string | null | undefined) ?? null;
+      const endKey = (String(key) + 'e') as keyof RecordItemsDto; // e.g. s134 -> s134e
+      const end = (row[endKey] as string | null | undefined) ?? null;
 
-    const a = start ?? '';
-    const b = end ?? '';
+      const a = start ?? '';
+      const b = end ?? '';
 
-   
-    if (start && end) return`${b} — ${a}`;
 
-   
+      if (start && end) return `${b} — ${a}`;
 
-    return `${b}${a}`;
-  }
+
+
+      return `${b}${a}`;
+    }
     if (key === 'dataType' && row.dataType !== null) {
       return DATA_TYPE_MAP[row.dataType] ?? row.dataType
     }
@@ -164,7 +178,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   isLoading = signal(false);
 
   // دیتا
-  rows = signal<ApiItem[]>([]);
+  rows = signal<RecordItemsDto[]>([]);
 
 
   dataTypeOptions = signal<{ value: number, label: string }[]>(DATA_TYPE_OPTIONS_FIXED);
@@ -175,20 +189,20 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   private filterChange$ = new Subject<Partial<Filters>>();
   private destroy$ = new Subject<void>();
 
-  constructor(private api: RecordsService, private router: Router,private filterService: FilterService) { }
+  constructor(private api: RecordsService, private router: Router, private filterService: FilterService) { }
 
   ngOnInit(): void {
-      const stored = this.filterService.getFilter();
-  if (stored) {
-    this.filters = { ...stored };
-    // set UI inputs if you use plain DOM inputs (you already query by .filter-input elsewhere)
-    setTimeout(() => {
-      Object.entries(this.filters).forEach(([k, v]) => {
-        const el = document.querySelector<HTMLInputElement | HTMLSelectElement>(`.filter-input[name="${k}"]`);
-        if (el) el.value = String(v ?? '');
-      });
-    }, 0);
-  }
+    const stored = this.filterService.getFilter();
+    if (stored) {
+      this.filters = { ...stored };
+      // set UI inputs if you use plain DOM inputs (you already query by .filter-input elsewhere)
+      setTimeout(() => {
+        Object.entries(this.filters).forEach(([k, v]) => {
+          const el = document.querySelector<HTMLInputElement | HTMLSelectElement>(`.filter-input[name="${k}"]`);
+          if (el) el.value = String(v ?? '');
+        });
+      }, 0);
+    }
     // تغییر فیلترها با debounce → صفحه 1 → لود
     this.filterChange$
       .pipe(
@@ -207,13 +221,13 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
 
   private buildFilters(): Record<string, string | number> {
     const f = this.filters;
-    const allowed = new Set(['dataType', 'trainNo', 'dataTypeName', 'dayTypeName', 'dayType', 'dateP']);
+    const allowed = new Set(['dispatchNo','dataType', 'trainNo', 'dataTypeName', 'dayTypeName', 'dayType', 'dateP']);
     const out: Record<string, string | number> = {};
 
     for (const [k, v] of Object.entries(f)) {
       if (!allowed.has(k)) continue;
       if (v === undefined || v === null || String(v).trim() === '') continue;
-      if (k === 'dataType' || k === 'trainNo') {
+      if (k === 'dataType' || k === 'trainNo' || k ==='dispatchNo') {
         out[k] = Number(v);
       } else {
         out[k] = String(v).trim();
@@ -247,7 +261,9 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   onFilterInput(field: keyof Filters, ev: Event) {
     const value = (ev.target as HTMLInputElement)?.value ?? '';
     this.onFilterChange(field, value);
-  } onFilterSelect(field: keyof Filters, ev: Event) {
+  }
+
+  onFilterSelect(field: keyof Filters, ev: Event) {
     const value = (ev.target as HTMLSelectElement)?.value ?? '';
     this.onFilterChange(field, value);
   }
@@ -291,6 +307,9 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   onFilterChange(field: keyof Filters, value: string) {
     this.filterChange$.next({ [field]: value });
   }
+  onFilterChangeNo(field: keyof Filters, value: number) {
+    this.filterChange$.next({ [field]: value });
+  }
 
   showFilters = signal(true); // پیش‌فرض: فیلترها باز باشن
   toggleFilters() {
@@ -324,16 +343,16 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
     // صفحه رو برگردون به 1 و لود دوباره
     this.pageNumber.set(1);
     this.loadData();
-      this.filterService.setFilter(null);
+    this.filterService.setFilter(null);
   }
-showHelp = false;
+  showHelp = false;
 
-openHelp() {
-  this.showHelp = true;
-}
+  openHelp() {
+    this.showHelp = true;
+  }
 
-closeHelp() {
-  this.showHelp = false;
-}
+  closeHelp() {
+    this.showHelp = false;
+  }
 
 }

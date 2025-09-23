@@ -57,6 +57,16 @@
             </button>
             <!-- <input class="filter-input text-center" disabled placeholder="—" /> -->
           </th>
+
+          <!-- <th *ngFor="let _ of columns.slice(26)" class="thcell">
+            <input class="filter-input" disabled placeholder="—" />
+          </th> -->
+          <!-- شماره اعزام -->
+          <th class="thcell col-filter">
+
+            <input name="dispatchNo" class="filter-input" placeholder="مثلاً 1039"
+              (input)="onFilterInput('dispatchNo', $event)" />
+          </th>
           <!-- تاریخ (شمسی) با اسلش خودکار -->
           <th class="thcell col-filter">
             <input name="dateP" class="filter-input" placeholder="مثلاً 1404/06/24" (input)="onDateInput($event)" />
@@ -90,7 +100,7 @@
           </th> -->
 
           <!-- فیلتر برای ایستگاه‌ها فعلاً نداریم -->
-          <th *ngFor="let _ of columns.slice(5)" class="thcell">
+          <th *ngFor="let _ of columns.slice(6)" class="thcell">
             <input class="filter-input" disabled placeholder="—" />
           </th>
         </tr>
