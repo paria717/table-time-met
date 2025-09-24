@@ -12,10 +12,12 @@ type Filters = {
   trainNo?: string | number;
   dataTypeName?: string;
   dayTypeName?: string;
-
   dayType?: string | number;
   dateP?: string;
-  dispatchNo?:string| number | undefined;
+  dispatchNo?: string | number | undefined;
+  totalTirpTime?: number | undefined;
+  totalArriveTime?: number | undefined;
+  totalStopTime?: number | undefined;
   [key: string]: string | number | undefined;
 };
 
@@ -47,29 +49,29 @@ type Column = { key: keyof RecordItemsDto; title: string };
 export class RecordsTableComponent implements OnInit, OnDestroy {
   currentFilter: any = null;
 
-  private pick3NeighborsAround(row: RecordItemsDto): RecordItemsDto[] {
+  private pick5NeighborsAround(row: RecordItemsDto): RecordItemsDto[] {
     const list = this.rows();
     const idx = list.findIndex(x => x.id === row.id || x.id === row.id);
     if (idx < 0) return [row];
 
     // تلاش: از idx تا idx+3 (خودِ ردیف + دو ردیف بعدی)
-    let chunk = list.slice(idx, idx + 3);
+    let chunk = list.slice(idx, idx + 5);
 
     // اگر به انتهای صفحه خورد و کمتر از 3 شد، از قبلش پر کن تا بشه 3تا
-    if (chunk.length < 3) {
-      const deficit = 3 - chunk.length;
+    if (chunk.length < 5) {
+      const deficit = 5 - chunk.length;
       const start = Math.max(0, idx - deficit);
       chunk = list.slice(start, idx).concat(chunk);
     }
     // در نهایت فقط 3تا
-    return chunk.slice(0, 3);
+    return chunk.slice(0, 5);
   }
 
 
 
   openDetails(r: RecordItemsDto) {
     this.filterService.setFilter({ ...this.filters });
-    const bundle = this.pick3NeighborsAround(r);
+    const bundle = this.pick5NeighborsAround(r);
     this.router.navigate(['/records-chart'], { state: { records: bundle } });
   }
 
@@ -133,7 +135,10 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
       { key: 'trainNo', title: 'شماره قطار' },
       { key: 'dataType', title: 'نوع' },
       { key: 'dayType', title: 'نوع روز' },
-      { key: 'totalTirpTime', title: 'مدت زمان سفر' }
+      { key: 'totalTirpTime', title: 'مدت زمان سفر' },
+      { key: 'totalStopTime', title: 'مدت زمان توقف' },
+      { key: 'totalArriveTime', title: 'مدت زمان حرکت' }
+
     ];
   private isStationKey(key: string): key is `s${string}` {
     return /^s\d{3}$/i.test(key);
@@ -185,7 +190,9 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
 
   dayTypeOptions = signal<{ value: number, label: string }[]>(DAY_TYPE_OPTIONS_FIXED);
   // فیلترها
-  private filters: Filters = {};
+  private filters: Filters = {
+
+  };
   private filterChange$ = new Subject<Partial<Filters>>();
   private destroy$ = new Subject<void>();
 
@@ -221,19 +228,71 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
 
   private buildFilters(): Record<string, string | number> {
     const f = this.filters;
-    const allowed = new Set(['dispatchNo','dataType', 'trainNo', 'dataTypeName', 'dayTypeName', 'dayType', 'dateP']);
+    const allowed = new Set(['dispatchNo', 'dataType', 'trainNo', 'dataTypeName', 'dayTypeName', 'dayType', 'dateP', 'totalTirpTime', 'totalArriveTime', 'totalStopTime']);
     const out: Record<string, string | number> = {};
 
     for (const [k, v] of Object.entries(f)) {
       if (!allowed.has(k)) continue;
       if (v === undefined || v === null || String(v).trim() === '') continue;
-      if (k === 'dataType' || k === 'trainNo' || k ==='dispatchNo') {
+      if (k === 'dataType' || k === 'trainNo' || k === 'dispatchNo') {
         out[k] = Number(v);
       } else {
         out[k] = String(v).trim();
       }
     }
     return out;
+  }
+
+  sortBy = signal<{ propertyName: keyof RecordItemsDto; method: 0 | 1 } | null>(null);
+  orderBy(field: keyof RecordItemsDto) {
+    const cur = this.sortBy();
+
+    if (!cur || cur.propertyName !== field) {
+      this.sortBy.set({ propertyName: field, method: 0 }); // Asc
+    } else {
+      this.sortBy.set({
+        propertyName: field,
+        method: cur.method === 0 ? 1 : 0, // toggle
+      });
+    }
+    this.pageNumber.set(1);
+    this.loadData(); // fetch با وضعیت جدید
+  }
+  // private applyClientSort() {
+  //   const s = this.sortBy();
+  //   if (!s || s.propertyName !== 'dispatchNo') return;
+
+  //   const asc = s.method === 0;
+  //   const cloned = this.rows().slice();
+
+  //   cloned.sort((a, b) => this.compareDispatchNo(a, b, asc));
+  //   this.rows.set(cloned);
+  // }
+  // private compareDispatchNo(a: RecordItemsDto, b: RecordItemsDto, asc: boolean): number {
+  //   const avRaw = (a as any)?.dispatchNo;
+  //   const bvRaw = (b as any)?.dispatchNo;
+
+  //   const av = Number(avRaw);
+  //   const bv = Number(bvRaw);
+
+  //   const aValid = Number.isFinite(av);
+  //   const bValid = Number.isFinite(bv);
+
+  //   // فقط عدددارها را دخیل کن؛ null/NaN بروند انتها
+  //   if (aValid && bValid) {
+  //     return asc ? av - bv : bv - av;
+  //   }
+  //   if (aValid && !bValid) return -1; // a جلوتر
+  //   if (!aValid && bValid) return 1;  // b جلوتر
+  //   return 0; // هر دو نامعتبر → بدون تغییر
+  // }
+
+  private buildSortingForApi():
+    | { conditions: { propertyName: string; method: 0 | 1 }[] }
+    | undefined {
+    const s = this.sortBy();
+    if (!s) return undefined;
+    return { conditions: [{ propertyName: s.propertyName, method: s.method }] };
   }
 
   loadData(): void {
@@ -243,21 +302,63 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
       pageNumber: this.pageNumber(),
       pageSize: this.pageSize(),
       filters: this.buildFilters(),
+      sorting: this.buildSortingForApi(),
     })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-          this.rows.set(res.result ?? []);
-
+          const data = (res.result ?? []).slice();
+          this.rows.set(data);
           this.totalCount.set(res.count ?? 0);
           this.isLoading.set(false);
 
+          // اگر بک‌اند nullها را خوب هندل نمی‌کند، این سورت کلاینتی نتیجه را اصلاح می‌کند
+          // this.applyClientSort();
         },
-
         error: _ => { this.isLoading.set(false); }
       });
   }
 
+  // loadData(): void {
+  //   this.isLoading.set(true);
+
+  //   this.api.getRecords(this.activeDirection(), {
+  //     pageNumber: this.pageNumber(),
+  //     pageSize: this.pageSize(),
+  //     filters: this.buildFilters(),
+  //     sorting: this.buildSortingForApi(),
+  //   })
+  //     .pipe(takeUntil(this.destroy$))
+  //     .subscribe({
+  //       next: res => {
+  //         this.rows.set(res.result ?? []);
+  //         this.totalCount.set(res.count ?? 0);
+  //         this.isLoading.set(false);
+  //       },
+  //       error: _ => { this.isLoading.set(false); }
+  //     });
+  // }
+
+  // مقایسه‌گر عددی با "nulls last"
+  private compareDispatchNo(a: RecordItemsDto, b: RecordItemsDto, asc: boolean): number {
+    const av = Number((a as any)?.dispatchNo);
+    const bv = Number((b as any)?.dispatchNo);
+    const aValid = Number.isFinite(av);
+    const bValid = Number.isFinite(bv);
+
+    if (aValid && bValid) return asc ? av - bv : bv - av;
+    if (aValid && !bValid) return -1;  // عدددار جلوتر
+    if (!aValid && bValid) return 1;   // null/NaN بره عقب
+    return 0;                          // هر دو نامعتبر → بدون تغییر
+  }
+
+  // private applyClientSort() {
+  //   const s = this.sortBy();
+  //   if (!s || s.propertyName !== 'dispatchNo') return;
+  //   const asc = s.method === 0;
+  //   const sorted = this.rows().slice().sort((a, b) => this.compareDispatchNo(a, b, asc));
+  //   this.rows.set(sorted);
+  // }
   onFilterInput(field: keyof Filters, ev: Event) {
     const value = (ev.target as HTMLInputElement)?.value ?? '';
     this.onFilterChange(field, value);
@@ -315,6 +416,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   toggleFilters() {
     this.showFilters.update(v => !v);
   }
+
 
   onDateInput(ev: Event) {
     let v = (ev.target as HTMLInputElement).value || '';

@@ -2,6 +2,7 @@
   <div class="flex items-center justify-between mb-4 text-base font-medium">
 
     <button class="ml-2 bg-blue-50 rounded-lg px-4 py-2" (click)="openHelp()">راهنما</button>
+
     <div *ngIf="showHelp" class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
         <h2 class="text-xl font-bold mb-2">راهنما</h2>
@@ -38,7 +39,7 @@
 
   <!-- اسکرول افقی -->
   <div class="overflow-x-auto rounded-2xl border shadow-sm">
-    <!-- عرض حداقلی جدول رو زیاد گذاشتم که به‌راحتی اسکرول بشه -->
+
     <table class="min-w-[1600px] w-full text-[15px] table-auto">
       <thead class="bg-gray-50 sticky top-0 z-10">
         <tr class="text-right">
@@ -63,10 +64,22 @@
           </th> -->
           <!-- شماره اعزام -->
           <th class="thcell col-filter">
+            <div class="flex items-center gap-1">
+              <input name="dispatchNo" class="filter-input" placeholder="مثلاً 1039"
+                (input)="onFilterInput('dispatchNo', $event)" (click)="$event.stopPropagation()" />
 
-            <input name="dispatchNo" class="filter-input" placeholder="مثلاً 1039"
-              (input)="onFilterInput('dispatchNo', $event)" />
+              <!-- دکمه سورت: همیشه دیده می‌شود -->
+              <button type="button" class="px-1 h-7 border rounded-md hover:bg-gray-50 flex items-center gap-1"
+                (click)="orderBy('dispatchNo'); $event.stopPropagation()" title="مرتب‌سازی با شماره اعزام">
+                <span [class.opacity-30]="!(sortBy()?.propertyName === 'dispatchNo')" class="leading-none">
+                  {{ sortBy()?.propertyName === 'dispatchNo'
+                  ? (sortBy()?.method === 0 ? '↓' : '↑' )
+                  : '↕' }}
+                </span>
+              </button>
+            </div>
           </th>
+
           <!-- تاریخ (شمسی) با اسلش خودکار -->
           <th class="thcell col-filter">
             <input name="dateP" class="filter-input" placeholder="مثلاً 1404/06/24" (input)="onDateInput($event)" />
@@ -98,9 +111,59 @@
           <!-- <th class="thcell">
             <input class="filter-input" placeholder="عادی / تعطیل ..." (input)="onFilterInput('dayTypeName', $event)" />
           </th> -->
+          <!-- مدت زمان سفر-->
+          <th class="thcell col-filter">
+            <div class="flex items-center gap-1">
+              <input name="totalTirpTime" class="filter-input" placeholder="مثلاً 48"
+                (input)="onFilterInput('totalTirpTime', $event)" (click)="$event.stopPropagation()" />
 
+              <!-- دکمه سورت: همیشه دیده می‌شود -->
+              <button type="button" class="px-1 h-7 border rounded-md hover:bg-gray-50 flex items-center gap-1"
+                (click)="orderBy('totalTirpTime'); $event.stopPropagation()" title="مرتب‌سازی با شماره اعزام">
+                <span [class.opacity-30]="!(sortBy()?.propertyName === 'totalTirpTime')" class="leading-none">
+                  {{ sortBy()?.propertyName === 'totalTirpTime'
+                  ? (sortBy()?.method === 0 ? '↓' : '↑' )
+                  : '↕' }}
+                </span>
+              </button>
+            </div>
+          </th>
+          <!-- مدت زمان حرکت-->
+          <th class="thcell col-filter">
+            <div class="flex items-center gap-1">
+              <input name="totalArriveTime" class="filter-input" placeholder="مثلاً 48"
+                (input)="onFilterInput('totalArriveTime', $event)" (click)="$event.stopPropagation()" />
+
+              <!-- دکمه سورت: همیشه دیده می‌شود -->
+              <button type="button" class="px-1 h-7 border rounded-md hover:bg-gray-50 flex items-center gap-1"
+                (click)="orderBy('totalArriveTime'); $event.stopPropagation()" title="مرتب‌سازی با شماره اعزام">
+                <span [class.opacity-30]="!(sortBy()?.propertyName === 'totalArriveTime')" class="leading-none">
+                  {{ sortBy()?.propertyName === 'totalArriveTime'
+                  ? (sortBy()?.method === 0 ? '↓' : '↑' )
+                  : '↕' }}
+                </span>
+              </button>
+            </div>
+          </th>
+          <!-- مدت زمان توقف-->
+          <th class="thcell col-filter">
+            <div class="flex items-center gap-1">
+              <input name="totalStopTime" class="filter-input" placeholder="مثلاً 48"
+                (input)="onFilterInput('totalStopTime', $event)" (click)="$event.stopPropagation()" />
+
+              <!-- دکمه سورت: همیشه دیده می‌شود -->
+              <button type="button" class="px-1 h-7 border rounded-md hover:bg-gray-50 flex items-center gap-1"
+                (click)="orderBy('totalStopTime'); $event.stopPropagation()" title="مرتب‌سازی با شماره اعزام">
+                <span [class.opacity-30]="!(sortBy()?.propertyName === 'totalStopTime')" class="leading-none">
+                  {{ sortBy()?.propertyName === 'totalStopTime'
+                  ? (sortBy()?.method === 0 ? '↓' : '↑' )
+                  : '↕' }}
+                </span>
+              </button>
+            </div>
+          </th>
           <!-- فیلتر برای ایستگاه‌ها فعلاً نداریم -->
-          <th *ngFor="let _ of columns.slice(6)" class="thcell">
+          <th *ngFor="let _ of columns.slice(9)" class="thcell">
             <input class="filter-input" disabled placeholder="—" />
           </th>
         </tr>

@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ApiResponse, Query } from '../domain/index';
+import { ApiResponse, Query, RecordItemsDto } from '../domain/index';
+
 
 
 
@@ -25,6 +26,31 @@ export class RecordsService {
             return direction === 1 ? this.baseUrlserver1 : this.baseUrlserver2;
         }
     }
+    // getRecords(
+    //   direction: 1 | 2,
+    //   q: { pageNumber: number; pageSize: number; filters?: Record<string, string | number>;
+    //        sorting?: { conditions: { propertyName: string; method: 0 | 1 }[] } }
+    // ) {
+    //   const body: any = {
+    //     paging: { pageNumber: q.pageNumber, pageSize: q.pageSize },
+    //   };
+    //   if (q.filters && Object.keys(q.filters).length) {
+    //     body.filtering = {
+    //       conditions: Object.entries(q.filters).map(([propertyName, propertyValue]) => ({
+    //         propertyName, propertyValue, method: 0
+    //       })),
+    //     };
+    //   }
+    //   if (q.sorting && q.sorting.conditions?.length) {
+    //     body.sorting = q.sorting;
+    //   }
+
+    //   return this.http.post<PagedResult<RecordItemsDto>>(
+    //     `/api/records/${direction}`,
+    //     body
+    //   );
+    // }
+
 
 
     getRecords(direction: 1 | 2, q: Query): Observable<ApiResponse> {
@@ -32,7 +58,7 @@ export class RecordsService {
         const numericKeys = new Set(['dataType', 'trainNo']);
 
 
-        const conditions = Object.entries(q.filters ?? {})
+        const filteringConds = Object.entries(q.filters ?? {})
             .filter(([, v]) => v !== undefined && v !== null && String(v).trim().length > 0)
             .map(([k, v]) => ({
                 propertyName: k,
@@ -40,10 +66,15 @@ export class RecordsService {
                 method: 0, // equals
             }));
 
+        const sortingConds = (q.sorting?.conditions ?? []).map(sc => ({
+            propertyName: sc.propertyName,
+            method: sc.method, // 0=Asc, 1=Desc
+        }));
 
         const payload = {
             paging: { pageNumber: q.pageNumber, pageSize: q.pageSize },
-            filtering: { conditions },
+            filtering: { conditions: filteringConds },
+            sorting: { conditions: sortingConds },
         } as const;
 
 
