@@ -3,6 +3,9 @@ import { Component, inject, signal, computed, effect, ElementRef, ViewChild } fr
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import Highcharts, { color } from 'highcharts';
+
+import Accessibility from 'highcharts/modules/accessibility';
+
 import { DATA_TYPE_OPTIONS_FIXED, stationTitlesDir1, stationTitlesDir2 } from '../../constants/index';
 // import { RecordsService } from '../../services/records.service'; // اگر خواستی fallback API
 
@@ -100,7 +103,8 @@ export class RecordsChartComponent {
 
       const entryMs = this.timeToMsWithDay(rec[key], prevExit);
       const exitMs = this.timeToMsWithDay(rec[key + 'e'], entryMs);
-
+      const planningMs = this.timeToMsWithDay(rec[key + 'p'])
+     
       let dwell: number | null = null;
       if (entryMs !== null && exitMs !== null) {
         dwell = exitMs - entryMs;
@@ -130,7 +134,19 @@ export class RecordsChartComponent {
           timeType: 'خروج',
           stationKey: key + 'e',
           dwell: dwell,
-          marker: { symbol: 'square' }
+          marker: { symbol: 'triangle-down' }
+        });
+      }
+      if (planningMs !== null) {
+        points.push({
+          x: planningMs,
+          y: yVal,
+          _xStationDist: yCumVisual[i],
+          name: titles[i],
+          timeType: 'زمان برنامه ریزی شده',
+          stationKey: key + 'p',
+          dwell: dwell,
+          marker: { symbol: 'triangle-down', }
         });
       }
     }
@@ -263,7 +279,7 @@ export class RecordsChartComponent {
   });
   chartTitle = computed<string>(() => {
     const recordsr = this.records();
-    const tn = recordsr.map(r=>r.trainNo ?? '—').filter(tn => tn !== '—').join(', ');
+    const tn = recordsr.map(r => r.trainNo ?? '—').filter(tn => tn !== '—').join(', ');
     // const tn = r?.trainNo ?? '—';
     // const tp = DATA_TYPE_OPTIONS_FIXED[r?.dataType] ?? '';
     // const multi = this.records().length > 1 ? ' | مقایسه' : '';
@@ -281,7 +297,9 @@ export class RecordsChartComponent {
 
     this.tryRenderChart();
   }
+
   private tryRenderChart() {
+
     if (!this.chartEl?.nativeElement) return;
     const recs = this.records();
     if (!recs.length) return;
@@ -289,41 +307,144 @@ export class RecordsChartComponent {
     const axis = this.buildAxisMetaForFirstRecord();
     if (!axis) return;
 
-    const { titles, yTicks, yCumVisual } = axis;
+    const { titles, yTicks } = axis;
 
     // برای هر رکورد یک سری بساز
-    const seriesList: Highcharts.SeriesLineOptions[] = recs.map((rec) => {
+    const seriesList: Highcharts.SeriesOptionsType[] = [];
+    recs.forEach((rec) => {
       const points = this.pointsForRecord(rec, axis);
 
-      // اسم سری: قطار + تاریخ
       const tn = rec?.trainNo ?? '—';
-      // const tp = DATA_TYPE_OPTIONS_FIXED[rec?.dataType] ?? '';
       const dp = rec?.dateP ?? '';
-      const sname = `قطار ${tn} - ${dp} `;
+      const baseName = `قطار ${tn} - ${dp}`;
 
-      return {
+      // تفکیک نقاط
+      const actualPoints = points.filter(p => p.timeType !== 'زمان برنامه ریزی شده').sort((a, b) => (a.y ?? 0) - (b.y ?? 0));
+      const plannedPoints = points
+        .filter(p => p.timeType === 'زمان برنامه ریزی شده')
+        .sort((a, b) => (a.y ?? 0) - (b.y ?? 0))
+
+      // سری Actual (ورود/خروج)
+      seriesList.push({
         type: 'line',
-        name: sname,
-        data: points.map(p => ({
-          x: p.x, y: p.y, name: p.name, timeType: p.timeType,
-          dwell: p.dwell, travelFromPrev: p.travelFromPrev, marker: p.marker,
+        name: `${baseName} | Actual`,
+        data: actualPoints.map(p => ({
+          x: p.x,
+          y: p.y,
+          name: p.name,
+          timeType: p.timeType,
+          dwell: p.dwell,
+          travelFromPrev: p.travelFromPrev,
+          marker: p.marker,
           dataLabels: {
-            x: -22, y: -5, enabled: true, align: 'left',
+            x: -22,
+            y: -5,
+            enabled: true,
+            align: 'left',
             formatter: function (this: any) {
               const d = this.point.dwell;
-              if (d == null) return '';
-              return Math.floor(d / 1000).toString(); // ثانیه
+              return d == null ? '' : Math.floor(d / 1000).toString(); // ثانیه
             },
             style: { fontSize: '14px' }
           }
         })),
-        marker: { enabled: true, radius: 4 }
-      };
+        marker: { enabled: true, radius: 4 },
+        zIndex: 2,            // بالاتر از planned
+        lineWidth: 2
+      } as Highcharts.SeriesLineOptions);
+
+      // سری Planned (فقط زمان‌های برنامه‌ریزی‌شده) — خط‌چین قرمز
+      if (plannedPoints.length) {
+        seriesList.push({
+          type: 'line',
+          name: `${baseName} | Planned`,
+          dashStyle: 'ShortDash',
+          color: '#ef4444',    // قرمز (tailwind red-500)؛ می‌تونی 'red' هم بذاری
+          data: plannedPoints.map(p => ({
+            x: p.x,
+            y: p.y,
+            name: p.name,
+            timeType: p.timeType,
+            marker: { symbol: 'triangle-down' } // متمایز از ورود/خروج
+          })),
+          marker: { enabled: true, radius: 4 },
+          zIndex: 1,
+          lineWidth: 2
+        } as Highcharts.SeriesLineOptions);
+      }
     });
 
     Highcharts.chart(this.chartEl.nativeElement, {
       chart: { type: 'line', style: { fontFamily: 'Yekan Bakh' } },
-      title: { text:  ' مقایسهٔ ۳ سفر  —'  + this.chartTitle()},
+      title: { text: 'مقایسهٔ 5 سفر — ' + this.chartTitle() },
+      xAxis: {
+        type: 'datetime',
+        title: { text: 'زمان' },
+        labels: { format: '{value:%H:%M:%S}' }
+      },
+      yAxis: {
+        title: { text: 'ایستگاه' },
+        tickPositions: yTicks,
+        gridLineWidth: 1,
+        labels: {
+          formatter: function (this: any) {
+            const idx = yTicks.indexOf(this.value);
+            return idx >= 0 ? titles[idx] : '';
+          }
+        }
+      },
+      tooltip: {
+        useHTML: true,
+        shared: false,
+        formatter: function (this: any) {
+          const p = this.point;
+          const t = p?.x ? Highcharts.dateFormat('%H:%M:%S', p.x) : '—';
+          let html = `<b>${p?.name ?? '—'}</b><br/>${p?.timeType ?? ''}: ${t}`;
+          if (p?.dwell != null) html += `<br/>مدت توقف: ${Math.floor(p.dwell / 1000)}s`;
+          if (p?.travelFromPrev != null) html += `<br/>مدت مسیر: ${Math.floor(p.travelFromPrev / 1000)}s`;
+          return html;
+        }
+      },
+      plotOptions: {
+        line: { connectNulls: true, marker: { enabled: true, radius: 4 } }
+      },
+      series: seriesList,
+      credits: { enabled: false },
+      legend: { enabled: true }
+    } as Highcharts.Options);
+
+    // const seriesList: Highcharts.SeriesLineOptions[] = recs.map((rec) => {
+    //   const points = this.pointsForRecord(rec, axis);
+
+    //   // اسم سری: قطار + تاریخ
+    //   const tn = rec?.trainNo ?? '—';
+    //   // const tp = DATA_TYPE_OPTIONS_FIXED[rec?.dataType] ?? '';
+    //   const dp = rec?.dateP ?? '';
+    //   const sname = `قطار ${tn} - ${dp} `;
+
+    //   return {
+    //     type: 'line',
+    //     name: sname,
+    //     data: points.map(p => ({
+    //       x: p.x, y: p.y, name: p.name, timeType: p.timeType,
+    //       dwell: p.dwell, travelFromPrev: p.travelFromPrev, marker: p.marker,
+    //       dataLabels: {
+    //         x: -22, y: -5, enabled: true, align: 'left',
+    //         formatter: function (this: any) {
+    //           const d = this.point.dwell;
+    //           if (d == null) return '';
+    //           return Math.floor(d / 1000).toString(); // ثانیه
+    //         },
+    //         style: { fontSize: '14px' }
+    //       }
+    //     })),
+    //     marker: { enabled: true, radius: 4 }
+    //   };
+    // });
+
+    Highcharts.chart(this.chartEl.nativeElement, {
+      chart: { type: 'line', style: { fontFamily: 'Yekan Bakh' } },
+      title: { text: ' مقایسهٔ 5 سفر  —' + this.chartTitle() },
       xAxis: { type: 'datetime', title: { text: 'زمان' }, labels: { format: '{value:%H:%M:%S}' } },
       yAxis: {
         title: { text: 'ایستگاه' },
@@ -343,8 +464,8 @@ export class RecordsChartComponent {
           const p = this.point;
           const t = p?.x ? Highcharts.dateFormat('%H:%M:%S', p.x) : '—';
           let html = `<b>${p?.name ?? '—'}</b><br/>${p?.timeType ?? ''}: ${t}`;
-          if (p?.dwell != null) html += `<br/>مدت توقف: ${Math.floor(p.dwell / 1000)}s`;
-          if (p?.travelFromPrev != null) html += `<br/>مدت مسیر: ${Math.floor(p.travelFromPrev / 1000)}s`;
+          if (p?.dwell != null) html += `<br/>مدت توقف: ${Math.floor(p.dwell / 1000)}`;
+          if (p?.travelFromPrev != null) html += `<br/>مدت مسیر: ${Math.floor(p.travelFromPrev / 1000)}`;
           return html;
         }
       },
@@ -356,7 +477,11 @@ export class RecordsChartComponent {
 
     // چارت دوم (ایستگاه روی X / زمان روی Y) با چند سری
     this.renderStationsOnXMulti(recs, axis);
-  } private renderStationsOnXMulti(recs: any[], axis: { titles: string[], yCumVisual: number[] }) {
+
+  }
+
+
+  private renderStationsOnXMulti(recs: any[], axis: { titles: string[], yCumVisual: number[] }) {
     if (!this.chartEl2?.nativeElement) return;
 
     const { titles, yCumVisual } = axis;
@@ -384,7 +509,7 @@ export class RecordsChartComponent {
 
     Highcharts.chart(this.chartEl2.nativeElement, {
       chart: { type: 'line', style: { fontFamily: 'Yekan Bakh' } },
-      title:{ text:  ' مقایسهٔ ۳ سفر  —'  + this.chartTitle()},
+      title: { text: ' مقایسهٔ 5 سفر  —' + this.chartTitle() },
       xAxis: {
         tickPositions: xTicksNumeric,
         gridLineWidth: 1,
@@ -397,15 +522,20 @@ export class RecordsChartComponent {
           }
         }
       },
-      yAxis: { type: 'datetime', title: { text: 'زمان' }, labels: { format: '{value:%H:%M:%S}' } },
+      yAxis: {
+        type: 'datetime',
+        tickInterval: 3600_000,
+        // tickInterval: 5 * 60_000 ,
+        title: { text: 'زمان' }, labels: { format: '{value:%H:%M:%S}' }
+      },
       tooltip: {
         useHTML: true,
         formatter: function (this: any) {
           const p = this.point;
           const t = p?.y ? Highcharts.dateFormat('%H:%M:%S', p.y) : '—';
           let html = `<b>${p?.name ?? '—'}</b><br/>${p?.timeType ?? ''}: ${t}`;
-          if (p?.dwell != null) html += `<br/>مدت توقف: ${Math.floor(p.dwell / 1000)}s`;
-          if (p?.travelFromPrev != null) html += `<br/>مدت مسیر: ${Math.floor(p.travelFromPrev / 1000)}s`;
+          if (p?.dwell != null) html += `<br/>مدت توقف: ${Math.floor(p.dwell / 1000)}`;
+          if (p?.travelFromPrev != null) html += `<br/>مدت مسیر: ${Math.floor(p.travelFromPrev / 1000)}`;
           return html;
         }
       },
@@ -415,158 +545,6 @@ export class RecordsChartComponent {
       legend: { enabled: true }
     } as Highcharts.Options);
   }
-
-
-  // private tryRenderChart() {
-  //   if (!this.chartEl?.nativeElement) return;
-  //   const r = this.record();
-  //   if (!r) return;
-  //   // const meta = this.getStationsWithY();
-  //   // const titles = meta.map(m => m.title);
-  //   // const yTicks = meta.map(m => m.yVal);
-  //   const dir = Number(r.direction) === 1 ? 1 : 2;
-  //   const titlesMeta = dir === 1 ? stationTitlesDir1 : stationTitlesDir2;
-  //   const segs = dir === 1 ? this.segmentLenDir1 : this.segmentLenDir2;
-  //   const MIN_GAP_M = this.calcMinGapMetersAdaptive(segs, this.chartEl!.nativeElement, 22); // تطبیقی نسبت به ارتفاع
-  //   const yCumVisual = this.hybridCumulativeFromSegments(segs, MIN_GAP_M);
-  //   const meta = titlesMeta.map((m, i) => ({ key: m.key, title: m.title, yVal: yCumVisual[i] }));
-  //   const titles = meta.map(m => m.title);
-  //   const yTicks = meta.map(m => m.yVal);
-  //   const xTicksNumeric = yCumVisual.slice();
-  //   // const dir = Number(r.direction) === 1 ? 1 : 2;
-  //   // const titlesMeta = dir === 1 ? this.stationTitlesDir1 : this.stationTitlesDir2;
-
-  //   const points: any[] = [];
-
-  //   for (let i = 0; i < meta.length; i++) {
-  //     const key = meta[i].key;
-  //     const prevExit = i > 0 ? this.timeToMsWithDay(r[meta[i - 1].key + 'e']) : null;
-
-  //     // زمان ورود و خروج با احتساب روز بعد
-  //     const entryMs = this.timeToMsWithDay(r[key], prevExit);
-  //     const exitMs = this.timeToMsWithDay(r[key + 'e'], entryMs);
-
-  //     // محاسبه مدت توقف (dwell) مطمئن
-  //     let dwell: number | null = null;
-  //     if (entryMs !== null && exitMs !== null) {
-  //       dwell = exitMs - entryMs;
-  //       if (dwell < 0) dwell += 24 * 60 * 60 * 1000; // اطمینان از مثبت بودن
-  //     }
-
-  //     // محاسبه زمان سفر از ایستگاه قبلی
-  //     const travel = prevExit !== null && entryMs !== null ? entryMs - prevExit : null;
-  //     const yVal = meta[i].yVal;
-  //     if (entryMs !== null) {
-  //       points.push({
-  //         x: entryMs,
-  //         y: yVal,
-  //         _xStationDist: yCumVisual[i],
-  //         name: titles[i],
-  //         timeType: 'ورود',
-  //         travelFromPrev: travel,
-  //         stationKey: key,
-  //         marker: { symbol: 'circle', color: 'red' }
-  //       });
-  //     }
-
-  //     if (exitMs !== null) {
-  //       points.push({
-  //         x: exitMs,
-  //         y: yVal,
-  //         _xStationDist: yCumVisual[i],
-  //         name: titles[i],
-  //         timeType: 'خروج',
-  //         stationKey: key + 'e',
-  //         dwell: dwell,
-  //         // travelFromPrev: travel,
-  //         marker: { symbol: 'square' }
-  //       });
-  //     }
-  //   }
-
-  //   points.sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
-
-  //   const formatDuration = (ms: number | null): string => {
-  //     if (ms === null || ms === undefined) return '—';
-  //     let totalSec = Math.floor(ms / 1000);
-  //     const h = Math.floor(totalSec / 3600);
-  //     const m = Math.floor(totalSec / 60) % 60;
-  //     const s = totalSec % 60;
-  //     const pad = (n: number) => n.toString().padStart(2, '0');
-  //     return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-  //   };
-
-  //   const formatDurationInSeconds = (ms: number | null): string => {
-  //     if (ms === null || ms === undefined) return '';
-  //     return Math.floor(ms / 1000).toString();
-  //   };
-
-  //   Highcharts.chart(this.chartEl.nativeElement, {
-  //     chart: { type: 'line', style: { fontFamily: 'Yekan Bakh' } },
-  //     title: { text: this.chartTitle() },
-  //     xAxis: { type: 'datetime', title: { text: 'زمان' }, labels: { format: '{value:%H:%M:%S}' }, },
-  //     yAxis: {
-  //       title: { text: 'ایستگاه' },          // بدون واحد
-  //       tickPositions: yTicks,              // دقیقاً روی ایستگاه‌ها
-  //       gridLineWidth: 1,
-  //       labels: {
-  //         formatter: function (this: any) {
-  //           const idx = yTicks.indexOf(this.value);
-  //           return idx >= 0 ? titles[idx] : ''; // فقط نام ایستگاه
-  //         },
-  //         useHTML: false
-  //       }
-  //     },
-  //     minPadding: 5,
-  //     maxPadding: 5,
-  //     tooltip: {
-  //       useHTML: true,
-  //       formatter: function (this: any) {
-  //         const p = this.point ?? (this.points && this.points[0] && this.points[0].point) ?? null;
-  //         if (!p) return '';
-  //         const timeStr = p.x ? Highcharts.dateFormat('%H:%M:%S', p.x) : '—';
-  //         let html = `<b>${p.name ?? '—'}</b><br/>${p.timeType ?? ''}: ${timeStr}`;
-  //         if (p.dwell != null) html += `<br/>مدت توقف: ${formatDuration(p.dwell)}`;
-  //         if (p.travelFromPrev != null) html += `<br/>مدت مسیر: ${formatDuration(p.travelFromPrev)}`;
-  //         return html;
-  //       }
-  //     },
-  //     plotOptions: {
-  //       line: { connectNulls: true, marker: { enabled: true, radius: 4 } }
-  //     },
-  //     series: [{
-  //       type: 'line',
-  //       name: `مسیر (ورود/خروج) - قطار ${r.trainNo ?? '—'}`,
-  //       data: points.map(p => ({
-  //         x: p.x,
-  //         y: p.y,
-  //         name: p.name,
-  //         timeType: p.timeType,
-  //         dwell: p.dwell,
-  //         travelFromPrev: p.travelFromPrev,
-  //         marker: p.marker,
-  //         dataLabels: {
-  //           x: -22,
-  //           y: -5,
-  //           enabled: true,
-  //           align: 'left',
-  //           formatter: function (this: any) {
-  //             const dwell = this.point.dwell;
-  //             // const travel = this.point.travelFromPrev;
-  //             // if (this.point.timeType === 'خروج' && travel != null) return `⟵ ${formatDuration(travel)}`;
-  //             return dwell != null ? formatDurationInSeconds(dwell) : '';
-  //           },
-  //           style: { fontSize: '14px' }
-  //         }
-  //       }))
-  //     }],
-  //     credits: { enabled: false },
-  //     legend: { enabled: false }
-  //   } as Highcharts.Options);
-  //   this.renderStationsOnX(points, titles, xTicksNumeric);
-  // }
-
-  // ← اضافه: تبدیل "HH:mm[:ss]" به میلی‌ثانیه
   private timeToMs(t?: string | null): number | null {
     if (!t) return null;
     const m = String(t).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
@@ -608,3 +586,155 @@ export class RecordsChartComponent {
 
   }
 }
+
+// private tryRenderChart() {
+//   if (!this.chartEl?.nativeElement) return;
+//   const r = this.record();
+//   if (!r) return;
+//   // const meta = this.getStationsWithY();
+//   // const titles = meta.map(m => m.title);
+//   // const yTicks = meta.map(m => m.yVal);
+//   const dir = Number(r.direction) === 1 ? 1 : 2;
+//   const titlesMeta = dir === 1 ? stationTitlesDir1 : stationTitlesDir2;
+//   const segs = dir === 1 ? this.segmentLenDir1 : this.segmentLenDir2;
+//   const MIN_GAP_M = this.calcMinGapMetersAdaptive(segs, this.chartEl!.nativeElement, 22); // تطبیقی نسبت به ارتفاع
+//   const yCumVisual = this.hybridCumulativeFromSegments(segs, MIN_GAP_M);
+//   const meta = titlesMeta.map((m, i) => ({ key: m.key, title: m.title, yVal: yCumVisual[i] }));
+//   const titles = meta.map(m => m.title);
+//   const yTicks = meta.map(m => m.yVal);
+//   const xTicksNumeric = yCumVisual.slice();
+//   // const dir = Number(r.direction) === 1 ? 1 : 2;
+//   // const titlesMeta = dir === 1 ? this.stationTitlesDir1 : this.stationTitlesDir2;
+
+//   const points: any[] = [];
+
+//   for (let i = 0; i < meta.length; i++) {
+//     const key = meta[i].key;
+//     const prevExit = i > 0 ? this.timeToMsWithDay(r[meta[i - 1].key + 'e']) : null;
+
+//     // زمان ورود و خروج با احتساب روز بعد
+//     const entryMs = this.timeToMsWithDay(r[key], prevExit);
+//     const exitMs = this.timeToMsWithDay(r[key + 'e'], entryMs);
+
+//     // محاسبه مدت توقف (dwell) مطمئن
+//     let dwell: number | null = null;
+//     if (entryMs !== null && exitMs !== null) {
+//       dwell = exitMs - entryMs;
+//       if (dwell < 0) dwell += 24 * 60 * 60 * 1000; // اطمینان از مثبت بودن
+//     }
+
+//     // محاسبه زمان سفر از ایستگاه قبلی
+//     const travel = prevExit !== null && entryMs !== null ? entryMs - prevExit : null;
+//     const yVal = meta[i].yVal;
+//     if (entryMs !== null) {
+//       points.push({
+//         x: entryMs,
+//         y: yVal,
+//         _xStationDist: yCumVisual[i],
+//         name: titles[i],
+//         timeType: 'ورود',
+//         travelFromPrev: travel,
+//         stationKey: key,
+//         marker: { symbol: 'circle', color: 'red' }
+//       });
+//     }
+
+//     if (exitMs !== null) {
+//       points.push({
+//         x: exitMs,
+//         y: yVal,
+//         _xStationDist: yCumVisual[i],
+//         name: titles[i],
+//         timeType: 'خروج',
+//         stationKey: key + 'e',
+//         dwell: dwell,
+//         // travelFromPrev: travel,
+//         marker: { symbol: 'square' }
+//       });
+//     }
+//   }
+
+//   points.sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
+
+//   const formatDuration = (ms: number | null): string => {
+//     if (ms === null || ms === undefined) return '—';
+//     let totalSec = Math.floor(ms / 1000);
+//     const h = Math.floor(totalSec / 3600);
+//     const m = Math.floor(totalSec / 60) % 60;
+//     const s = totalSec % 60;
+//     const pad = (n: number) => n.toString().padStart(2, '0');
+//     return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+//   };
+
+//   const formatDurationInSeconds = (ms: number | null): string => {
+//     if (ms === null || ms === undefined) return '';
+//     return Math.floor(ms / 1000).toString();
+//   };
+
+//   Highcharts.chart(this.chartEl.nativeElement, {
+//     chart: { type: 'line', style: { fontFamily: 'Yekan Bakh' } },
+//     title: { text: this.chartTitle() },
+//     xAxis: { type: 'datetime', title: { text: 'زمان' }, labels: { format: '{value:%H:%M:%S}' }, },
+//     yAxis: {
+//       title: { text: 'ایستگاه' },          // بدون واحد
+//       tickPositions: yTicks,              // دقیقاً روی ایستگاه‌ها
+//       gridLineWidth: 1,
+//       labels: {
+//         formatter: function (this: any) {
+//           const idx = yTicks.indexOf(this.value);
+//           return idx >= 0 ? titles[idx] : ''; // فقط نام ایستگاه
+//         },
+//         useHTML: false
+//       }
+//     },
+//     minPadding: 5,
+//     maxPadding: 5,
+//     tooltip: {
+//       useHTML: true,
+//       formatter: function (this: any) {
+//         const p = this.point ?? (this.points && this.points[0] && this.points[0].point) ?? null;
+//         if (!p) return '';
+//         const timeStr = p.x ? Highcharts.dateFormat('%H:%M:%S', p.x) : '—';
+//         let html = `<b>${p.name ?? '—'}</b><br/>${p.timeType ?? ''}: ${timeStr}`;
+//         if (p.dwell != null) html += `<br/>مدت توقف: ${formatDuration(p.dwell)}`;
+//         if (p.travelFromPrev != null) html += `<br/>مدت مسیر: ${formatDuration(p.travelFromPrev)}`;
+//         return html;
+//       }
+//     },
+//     plotOptions: {
+//       line: { connectNulls: true, marker: { enabled: true, radius: 4 } }
+//     },
+//     series: [{
+//       type: 'line',
+//       name: `مسیر (ورود/خروج) - قطار ${r.trainNo ?? '—'}`,
+//       data: points.map(p => ({
+//         x: p.x,
+//         y: p.y,
+//         name: p.name,
+//         timeType: p.timeType,
+//         dwell: p.dwell,
+//         travelFromPrev: p.travelFromPrev,
+//         marker: p.marker,
+//         dataLabels: {
+//           x: -22,
+//           y: -5,
+//           enabled: true,
+//           align: 'left',
+//           formatter: function (this: any) {
+//             const dwell = this.point.dwell;
+//             // const travel = this.point.travelFromPrev;
+//             // if (this.point.timeType === 'خروج' && travel != null) return `⟵ ${formatDuration(travel)}`;
+//             return dwell != null ? formatDurationInSeconds(dwell) : '';
+//           },
+//           style: { fontSize: '14px' }
+//         }
+//       }))
+//     }],
+//     credits: { enabled: false },
+//     legend: { enabled: false }
+//   } as Highcharts.Options);
+//   this.renderStationsOnX(points, titles, xTicksNumeric);
+// }
+
+// ← اضافه: تبدیل "HH:mm[:ss]" به میلی‌ثانیه
+
