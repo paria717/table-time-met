@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { FilterService } from '../../services/filter.service';
 import { RecordItemsDto } from '../../domain/';
 import { DATA_TYPE_MAP, DATA_TYPE_OPTIONS_FIXED, DAY_TYPE_MAP, DAY_TYPE_OPTIONS_FIXED } from '../../constants/index';
-
+import { HtmlParser } from '@angular/compiler'; import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 type Filters = {
   dataType?: string | number;
   trainNo?: string | number;
@@ -21,21 +21,6 @@ type Filters = {
   [key: string]: string | number | undefined;
 };
 
-
-// const DATA_TYPE_OPTIONS_FIXED: { value: number; label: string }[] = [
-//   { value: 1, label: DATA_TYPE_MAP[1] },
-//   { value: 2, label: DATA_TYPE_MAP[2] },
-//   { value: 3, label: DATA_TYPE_MAP[3] },
-//   { value: 4, label: DATA_TYPE_MAP[4] },
-//   { value: 5, label: DATA_TYPE_MAP[5] },
-//   { value: 6, label: DATA_TYPE_MAP[6] },
-// ];
-// const DAY_TYPE_OPTIONS_FIXED: { value: number; label: string }[] = [
-//   { value: 1, label: DAY_TYPE_MAP[1] },
-//   { value: 2, label: DAY_TYPE_MAP[2] },
-//   { value: 3, label: DAY_TYPE_MAP[3] },
-
-// ];
 type Column = { key: keyof RecordItemsDto; title: string };
 @Component({
   selector: 'app-records-table',
@@ -77,53 +62,167 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
 
   activeDirection = signal<1 | 2>(2);
 
-  private stationTitlesDir1: Column[] =
-    [
-      { key: 's118', title: 'کلاهدوز' },
-      { key: 's119', title: 'نیروهوایی' },
-      { key: 's120', title: 'نبرد' },
-      { key: 's121', title: 'پیروزی' },
-      { key: 's122', title: 'ابن‌سینا' },
-      { key: 's123', title: 'میدان شهدا' },
-      { key: 's124', title: 'دروازه شمیران' },
-      { key: 's125', title: 'دروازه دولت' },
-      { key: 's126', title: 'میدان فردوسی' },
-      { key: 's127', title: 'تئاتر شهر' },
-      { key: 's128', title: 'میدان انقلاب اسلامی' },
-      { key: 's129', title: 'توحید' },
-      { key: 's130', title: 'شادمان' },
-      { key: 's131', title: 'دکتر حبیب‌الله' },
-      { key: 's132', title: 'استاد معین' },
-      { key: 's133', title: 'میدان آزادی' },
-      { key: 's134', title: 'بیمه' },
-      { key: 's135', title: 'شهرک اکباتان' },
-      { key: 's136', title: 'ارم سبز' },
-      { key: 's137', title: 'علامه جعفری' },
+  private stationTitlesDir1: Column[] = [
+    { key: 's118', title: 'کلاهدوز' },
+    { key: 's118a', title: '  کلاهدوز به نیروهوایی (ثانیه)' },
 
-    ];
+    { key: 's119', title: 'نیروهوایی' },
+    { key: 's119stop', title: ' توقف در نیروهوایی (ثانیه) ' },
+    { key: 's119a', title: '(ثانیه)  نیروهوایی به نبرد' },
+
+    { key: 's120', title: 'نبرد' },
+    { key: 's120stop', title: ' توقف در نبرد (ثانیه)' },
+    { key: 's120a', title: '  نبرد به پیروزی (ثانیه)' },
+
+    { key: 's121', title: 'پیروزی' },
+    { key: 's121stop', title: ' توقف در پیروزی (ثانیه)' },
+    { key: 's121a', title: '  پیروزی به ابن‌سینا (ثانیه)' },
+
+    { key: 's122', title: 'ابن‌سینا' },
+    { key: 's122stop', title: ' توقف در ابن‌سینا (ثانیه)' },
+    { key: 's122a', title: '  ابن‌سینا به میدان شهدا (ثانیه)' },
+
+    { key: 's123', title: 'میدان شهدا' },
+    { key: 's123stop', title: ' توقف در میدان شهدا (ثانیه)' },
+    { key: 's123a', title: '  میدان شهدا به دروازه شمیران (ثانیه)' },
+
+    { key: 's124', title: 'دروازه شمیران' },
+    { key: 's124stop', title: ' توقف در دروازه شمیران (ثانیه)' },
+    { key: 's124a', title: '  دروازه شمیران به دروازه دولت (ثانیه)' },
+
+    { key: 's125', title: 'دروازه دولت' },
+    { key: 's125stop', title: ' توقف در دروازه دولت (ثانیه)' },
+    { key: 's125a', title: '  دروازه دولت به میدان فردوسی (ثانیه)' },
+
+    { key: 's126', title: 'میدان فردوسی' },
+    { key: 's126stop', title: ' توقف در میدان فردوسی (ثانیه)' },
+    { key: 's126a', title: '  میدان فردوسی به تئاتر شهر (ثانیه)' },
+
+    { key: 's127', title: 'تئاتر شهر' },
+    { key: 's127stop', title: ' توقف در تئاتر شهر (ثانیه)' },
+    { key: 's127a', title: '  تئاتر شهر به میدان انقلاب اسلامی (ثانیه)' },
+
+    { key: 's128', title: 'میدان انقلاب اسلامی' },
+    { key: 's128stop', title: ' توقف در میدان انقلاب اسلامی (ثانیه)' },
+    { key: 's128a', title: '  میدان انقلاب اسلامی به توحید (ثانیه)' },
+
+    { key: 's129', title: 'توحید' },
+    { key: 's129stop', title: ' توقف در توحید (ثانیه)' },
+    { key: 's129a', title: '  توحید به شادمان (ثانیه)' },
+
+    { key: 's130', title: 'شادمان' },
+    { key: 's130stop', title: ' توقف در شادمان (ثانیه)' },
+    { key: 's130a', title: '  شادمان به دکتر حبیب‌الله (ثانیه)' },
+
+    { key: 's131', title: 'دکتر حبیب‌الله' },
+    { key: 's131stop', title: ' توقف در دکتر حبیب‌الله (ثانیه)' },
+    { key: 's131a', title: '  دکتر حبیب‌الله به استاد معین (ثانیه)' },
+
+    { key: 's132', title: 'استاد معین' },
+    { key: 's132stop', title: ' توقف در استاد معین (ثانیه)' },
+    { key: 's132a', title: '  استاد معین به میدان آزادی (ثانیه)' },
+
+    { key: 's133', title: 'میدان آزادی' },
+    { key: 's133stop', title: ' توقف در میدان آزادی (ثانیه)' },
+    { key: 's133a', title: '  میدان آزادی به بیمه (ثانیه)' },
+
+    { key: 's134', title: 'بیمه' },
+    { key: 's134stop', title: ' توقف در بیمه (ثانیه)' },
+    { key: 's134a', title: '  بیمه به شهرک اکباتان (ثانیه)' },
+
+    { key: 's135', title: 'شهرک اکباتان' },
+    { key: 's135stop', title: ' توقف در شهرک اکباتان (ثانیه)' },
+    { key: 's135a', title: '  شهرک اکباتان به ارم سبز (ثانیه)' },
+
+    { key: 's136', title: 'ارم سبز' },
+    { key: 's136stop', title: ' توقف در ارم سبز (ثانیه)' },
+    { key: 's136a', title: '  ارم سبز به علامه جعفری (ثانیه)' },
+
+    { key: 's137', title: 'علامه جعفری' },
+    { key: 's137stop', title: ' توقف در علامه جعفری (ثانیه)' },
+  ];
 
   private stationTitlesDir2: Column[] = [
     { key: 's137', title: 'علامه جعفری' },
+    { key: 's137stop', title: ' توقف در علامه جعفری (ثانیه)' },
+    { key: 's137a', title: '  علامه جعفری به ارم سبز(ثانیه)' },
+
     { key: 's136', title: 'ارم سبز' },
+    { key: 's136stop', title: ' توقف در ارم سبز(ثانیه)' },
+    { key: 's136a', title: '  ارم سبز به شهرک اکباتان(ثانیه)' },
+
     { key: 's135', title: 'شهرک اکباتان' },
+    { key: 's135stop', title: ' توقف در شهرک اکباتان(ثانیه)' },
+    { key: 's135a', title: '  شهرک اکباتان به بیمه(ثانیه)' },
+
     { key: 's134', title: 'بیمه' },
+    { key: 's134stop', title: ' توقف در بیمه' },
+    { key: 's134a', title: '  بیمه به میدان آزادی (ثانیه)' },
+
     { key: 's133', title: 'میدان آزادی' },
+    { key: 's133stop', title: ' توقف در میدان آزادی (ثانیه)' },
+    { key: 's133a', title: '  میدان آزادی به استاد معین (ثانیه)' },
+
     { key: 's132', title: 'استاد معین' },
+    { key: 's132stop', title: ' توقف در استاد معین (ثانیه)' },
+    { key: 's132a', title: '  استاد معین به دکتر حبیب‌الله (ثانیه)' },
+
     { key: 's131', title: 'دکتر حبیب‌الله' },
+    { key: 's131stop', title: ' توقف در دکتر حبیب‌الله (ثانیه)' },
+    { key: 's131a', title: '  دکتر حبیب‌الله به شادمان (ثانیه)' },
+
     { key: 's130', title: 'شادمان' },
+    { key: 's130stop', title: ' توقف در شادمان (ثانیه)' },
+    { key: 's130a', title: '  شادمان به توحید (ثانیه)' },
+
     { key: 's129', title: 'توحید' },
+    { key: 's129stop', title: ' توقف در توحید (ثانیه)' },
+    { key: 's129a', title: '  توحید به میدان انقلاب اسلامی (ثانیه)' },
+
     { key: 's128', title: 'میدان انقلاب اسلامی' },
+    { key: 's128stop', title: ' توقف در میدان انقلاب اسلامی (ثانیه)' },
+    { key: 's128a', title: '  میدان انقلاب اسلامی به تئاتر شهر (ثانیه)' },
+
     { key: 's127', title: 'تئاتر شهر' },
+    { key: 's127stop', title: ' توقف در تئاتر شهر (ثانیه)' },
+    { key: 's127a', title: '  تئاتر شهر به میدان فردوسی (ثانیه)' },
+
     { key: 's126', title: 'میدان فردوسی' },
+    { key: 's126stop', title: ' توقف در میدان فردوسی (ثانیه)' },
+    { key: 's126a', title: '  میدان فردوسی به دروازه دولت (ثانیه)' },
+
     { key: 's125', title: 'دروازه دولت' },
+    { key: 's125stop', title: ' توقف در دروازه دولت (ثانیه)' },
+    { key: 's125a', title: '  دروازه دولت به دروازه شمیران (ثانیه)' },
+
     { key: 's124', title: 'دروازه شمیران' },
+    { key: 's124stop', title: ' توقف در دروازه شمیران (ثانیه)' },
+    { key: 's124a', title: '  دروازه شمیران به میدان شهدا (ثانیه)' },
+
     { key: 's123', title: 'میدان شهدا' },
+    { key: 's123stop', title: ' توقف در میدان شهدا (ثانیه)' },
+    { key: 's123a', title: '  میدان شهدا به ابن‌سینا (ثانیه)' },
+
     { key: 's122', title: 'ابن‌سینا' },
+    { key: 's122stop', title: ' توقف در ابن‌سینا (ثانیه)' },
+    { key: 's122a', title: '  ابن‌سینا به پیروزی (ثانیه)' },
+
     { key: 's121', title: 'پیروزی' },
+    { key: 's121stop', title: ' توقف در پیروزی (ثانیه)' },
+    { key: 's121a', title: '  پیروزی به نبرد (ثانیه)' },
+
     { key: 's120', title: 'نبرد' },
+    { key: 's120stop', title: ' توقف در نبرد (ثانیه)' },
+    { key: 's120a', title: '  نبرد به نیروهوایی (ثانیه)' },
+
     { key: 's119', title: 'نیروهوایی' },
-    { key: 's118', title: 'کلاهدوز' }
+    { key: 's119stop', title: ' توقف در نیروهوایی (ثانیه)' },
+    { key: 's119a', title: '  نیروهوایی به کلاهدوز (ثانیه)' },
+
+    { key: 's118', title: 'کلاهدوز' },
+    { key: 's118stop', title: ' توقف در کلاهدوز (ثانیه)' },
   ];
+
   private row2: Column[] = [{ key: 'rowNum2', title: 'ردیف' },];
   private row1: Column[] = [{ key: 'rowNum', title: 'ردیف' },];
   // ستون‌های ثابت
@@ -135,9 +234,9 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
       { key: 'trainNo', title: 'شماره قطار' },
       { key: 'dataType', title: 'نوع' },
       { key: 'dayType', title: 'نوع روز' },
-      { key: 'totalTirpTime', title: 'مدت زمان سفر' },
-      { key: 'totalStopTime', title: 'مدت زمان توقف' },
-      { key: 'totalArriveTime', title: 'مدت زمان حرکت' }
+      { key: 'totalTirpTime', title: 'کل مدت زمان سفر (دقیقه)' },
+      { key: 'totalStopTime', title: 'کل مدت زمان توقف (ثانیه)' },
+      { key: 'totalArriveTime', title: 'کل مدت زمان حرکت (ثانیه)' }
 
     ];
   private isStationKey(key: string): key is `s${string}` {
@@ -171,8 +270,20 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
     if (key === 'dayType' && row.dayType !== null) {
       return DAY_TYPE_MAP[row.dayType] ?? row.dayType
     }
-    // هر چیزی null/undefined بود، '—' برگردون
     const val = row[key] as unknown as string | number | null | undefined;
+
+
+    if ((key === 'totalStopTime' || key === 'totalArriveTime' || key === 's118a' || key === 's119a' || key === 's120a' || key === 's121a' || key === 's122a' ||
+      key === 's123a' || key === 's124a' || key === 's125a' || key === 's126a' || key === 's127a' || key === 's128a' ||
+      key === 's129a' || key === 's130a' || key === 's131a' || key === 's132a' || key === 's133a' || key === 's134a' || key === 's135a' || key === 's136a' || key == 's137a'
+    ) && val !== null && typeof val === 'number' && val !== 0) {
+      const absVal = Math.abs(val);
+
+      const minutes = Math.floor(absVal / 60);
+      return this.sanitizer.bypassSecurityTrustHtml(`(دقیقه <span class="text-red-500">${minutes}</span> )${absVal}`);
+    }
+    // هر چیزی null/undefined بود، '—' برگردون
+
     return (val ?? '—');
   }
 
@@ -196,7 +307,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
   private filterChange$ = new Subject<Partial<Filters>>();
   private destroy$ = new Subject<void>();
 
-  constructor(private api: RecordsService, private router: Router, private filterService: FilterService) { }
+  constructor(private api: RecordsService, private router: Router, private filterService: FilterService, private sanitizer: DomSanitizer) { }
 
   ngOnInit(): void {
     const stored = this.filterService.getFilter();
@@ -258,34 +369,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
     this.pageNumber.set(1);
     this.loadData(); // fetch با وضعیت جدید
   }
-  // private applyClientSort() {
-  //   const s = this.sortBy();
-  //   if (!s || s.propertyName !== 'dispatchNo') return;
 
-  //   const asc = s.method === 0;
-  //   const cloned = this.rows().slice();
-
-  //   cloned.sort((a, b) => this.compareDispatchNo(a, b, asc));
-  //   this.rows.set(cloned);
-  // }
-  // private compareDispatchNo(a: RecordItemsDto, b: RecordItemsDto, asc: boolean): number {
-  //   const avRaw = (a as any)?.dispatchNo;
-  //   const bvRaw = (b as any)?.dispatchNo;
-
-  //   const av = Number(avRaw);
-  //   const bv = Number(bvRaw);
-
-  //   const aValid = Number.isFinite(av);
-  //   const bValid = Number.isFinite(bv);
-
-  //   // فقط عدددارها را دخیل کن؛ null/NaN بروند انتها
-  //   if (aValid && bValid) {
-  //     return asc ? av - bv : bv - av;
-  //   }
-  //   if (aValid && !bValid) return -1; // a جلوتر
-  //   if (!aValid && bValid) return 1;  // b جلوتر
-  //   return 0; // هر دو نامعتبر → بدون تغییر
-  // }
 
   private buildSortingForApi():
     | { conditions: { propertyName: string; method: 0 | 1 }[] }
@@ -308,6 +392,8 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
       .subscribe({
         next: res => {
           const data = (res.result ?? []).slice();
+
+
           this.rows.set(data);
           this.totalCount.set(res.count ?? 0);
           this.isLoading.set(false);
@@ -319,46 +405,7 @@ export class RecordsTableComponent implements OnInit, OnDestroy {
       });
   }
 
-  // loadData(): void {
-  //   this.isLoading.set(true);
 
-  //   this.api.getRecords(this.activeDirection(), {
-  //     pageNumber: this.pageNumber(),
-  //     pageSize: this.pageSize(),
-  //     filters: this.buildFilters(),
-  //     sorting: this.buildSortingForApi(),
-  //   })
-  //     .pipe(takeUntil(this.destroy$))
-  //     .subscribe({
-  //       next: res => {
-  //         this.rows.set(res.result ?? []);
-  //         this.totalCount.set(res.count ?? 0);
-  //         this.isLoading.set(false);
-  //       },
-  //       error: _ => { this.isLoading.set(false); }
-  //     });
-  // }
-
-  // مقایسه‌گر عددی با "nulls last"
-  private compareDispatchNo(a: RecordItemsDto, b: RecordItemsDto, asc: boolean): number {
-    const av = Number((a as any)?.dispatchNo);
-    const bv = Number((b as any)?.dispatchNo);
-    const aValid = Number.isFinite(av);
-    const bValid = Number.isFinite(bv);
-
-    if (aValid && bValid) return asc ? av - bv : bv - av;
-    if (aValid && !bValid) return -1;  // عدددار جلوتر
-    if (!aValid && bValid) return 1;   // null/NaN بره عقب
-    return 0;                          // هر دو نامعتبر → بدون تغییر
-  }
-
-  // private applyClientSort() {
-  //   const s = this.sortBy();
-  //   if (!s || s.propertyName !== 'dispatchNo') return;
-  //   const asc = s.method === 0;
-  //   const sorted = this.rows().slice().sort((a, b) => this.compareDispatchNo(a, b, asc));
-  //   this.rows.set(sorted);
-  // }
   onFilterInput(field: keyof Filters, ev: Event) {
     const value = (ev.target as HTMLInputElement)?.value ?? '';
     this.onFilterChange(field, value);

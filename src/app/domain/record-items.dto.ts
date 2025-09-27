@@ -16,6 +16,18 @@ export class RecordItemsDto {
     s126!: string | null; s127!: string | null; s128!: string | null; s129!: string | null;
     s130!: string | null; s131!: string | null; s132!: string | null; s133!: string | null;
     s134!: string | null; s135!: string | null; s136!: string | null; s137!: string | null;
+    // movement duration(arrive)
+    s118a!: number | null; s119a!: number | null; s120a!: number | null; s121a!: number | null;
+    s122a!: number | null; s123a!: number | null; s124a!: number | null; s125a!: number | null;
+    s126a!: number | null; s127a!: number | null; s128a!: number | null; s129a!: number | null;
+    s130a!: number | null; s131a!: number | null; s132a!: number | null; s133a!: number | null;
+    s134a!: number | null; s135a!: number | null; s136a!: number | null; s137a!: number | null;
+    //Stop time
+    s118stop!: number | null; s119stop!: number | null; s120stop!: number | null; s121stop!: number | null;
+    s122stop!: number | null; s123stop!: number | null; s124stop!: number | null; s125stop!: number | null;
+    s126stop!: number | null; s127stop!: number | null; s128stop!: number | null; s129stop!: number | null;
+    s130stop!: number | null; s131stop!: number | null; s132stop!: number | null; s133stop!: number | null;
+    s134stop!: number | null; s135stop!: number | null; s136stop!: number | null; s137stop!: number | null;
     // exit time
     s118E!: string | null; s119E!: string | null; s120E!: string | null; s121E!: string | null;
     s122E!: string | null; s123E!: string | null; s124E!: string | null; s125E!: string | null;
@@ -28,6 +40,7 @@ export class RecordItemsDto {
     s126P!: string | null; s127P!: string | null; s128P!: string | null; s129P!: string | null;
     s130P!: string | null; s131P!: string | null; s132P!: string | null; s133P!: string | null;
     s134P!: string | null; s135P!: string | null; s136P!: string | null; s137P!: string | null;
+
     dataTypeName!: string | null;
     dayTypeName!: string | null;
     dateP!: string | null;

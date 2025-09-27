@@ -12,7 +12,7 @@ import { ApiResponse, Query, RecordItemsDto } from '../domain/index';
 export class RecordsService {
     private http = inject(HttpClient);
 
-    isLocal: boolean = true;
+    isLocal: boolean = false;
     private baseUrllocal1 = 'https://mis.metro.com/MimicRecordLine/api2/MimicRecordsLine4Dir1';
     private baseUrllocal2 = 'https://mis.metro.com/MimicRecordLine/api2/MimicRecordsLine4Dir2';
     private baseUrlserver1 = 'https://mis.metro.com/MimicRecordLine/api/MimicRecordsLine4Dir1';

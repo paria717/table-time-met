@@ -33,35 +33,28 @@
   </div>
 
 
-
-
-
-
-  <!-- اسکرول افقی -->
-  <div class="overflow-x-auto rounded-2xl border shadow-sm">
-
-    <table class="min-w-[1600px] w-full text-[15px] table-auto">
+  <div class="overflow-auto rounded-2xl border shadow-sm max-h-[calc(100vh-100px)] md:max-h-[1000px] lg:max-h-[800px]">
+    <table class="min-w-[1800px] w-full text-base table-auto">
       <thead class="bg-gray-50 sticky top-0 z-10">
         <tr class="text-right">
           <th *ngFor="let c of columns; let ci = index" class="thcell" [class.col-row]="ci === 0"
             [class.text-center]="ci === 0" [class.col-station]="ci > 4">
-            {{ c.title }}
+            <span class="block whitespace-normal leading-snug max-w-[18ch]">
+              {{ c.title }}
+            </span>
           </th>
         </tr>
 
         <!-- ردیف فیلترها (فقط فیلدهای اصلی) -->
-        <tr class="text-right bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <tr
+          class="text-right bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-[tr-height] z-10">
           <th class="thcell col-row text-center">
             <button type="button" class="px-2 h-7 border rounded-md bg-red-50 text-red-600 hover:bg-red-100 text-xs"
               (click)="resetFilters(); $event.stopPropagation()">
               ✕
             </button>
-            <!-- <input class="filter-input text-center" disabled placeholder="—" /> -->
           </th>
 
-          <!-- <th *ngFor="let _ of columns.slice(26)" class="thcell">
-            <input class="filter-input" disabled placeholder="—" />
-          </th> -->
           <!-- شماره اعزام -->
           <th class="thcell col-filter">
             <div class="flex items-center gap-1">
@@ -87,7 +80,6 @@
 
           <!-- شماره قطار -->
           <th class="thcell col-filter">
-            <!-- <input class="filter-input" placeholder=" مثلاً 330 " (input)="onFilterInput('trainNo', $event)" /> -->
             <input name="trainNo" class="filter-input" placeholder="مثلاً 330"
               (input)="onFilterInput('trainNo', $event)" />
           </th>
@@ -108,16 +100,12 @@
             </select>
           </th>
 
-          <!-- <th class="thcell">
-            <input class="filter-input" placeholder="عادی / تعطیل ..." (input)="onFilterInput('dayTypeName', $event)" />
-          </th> -->
           <!-- مدت زمان سفر-->
           <th class="thcell col-filter">
             <div class="flex items-center gap-1">
               <input name="totalTirpTime" class="filter-input" placeholder="مثلاً 48"
                 (input)="onFilterInput('totalTirpTime', $event)" (click)="$event.stopPropagation()" />
 
-              <!-- دکمه سورت: همیشه دیده می‌شود -->
               <button type="button" class="px-1 h-7 border rounded-md hover:bg-gray-50 flex items-center gap-1"
                 (click)="orderBy('totalTirpTime'); $event.stopPropagation()" title="مرتب‌سازی با شماره اعزام">
                 <span [class.opacity-30]="!(sortBy()?.propertyName === 'totalTirpTime')" class="leading-none">
@@ -134,7 +122,6 @@
               <input name="totalArriveTime" class="filter-input" placeholder="مثلاً 48"
                 (input)="onFilterInput('totalArriveTime', $event)" (click)="$event.stopPropagation()" />
 
-              <!-- دکمه سورت: همیشه دیده می‌شود -->
               <button type="button" class="px-1 h-7 border rounded-md hover:bg-gray-50 flex items-center gap-1"
                 (click)="orderBy('totalArriveTime'); $event.stopPropagation()" title="مرتب‌سازی با شماره اعزام">
                 <span [class.opacity-30]="!(sortBy()?.propertyName === 'totalArriveTime')" class="leading-none">
@@ -151,7 +138,6 @@
               <input name="totalStopTime" class="filter-input" placeholder="مثلاً 48"
                 (input)="onFilterInput('totalStopTime', $event)" (click)="$event.stopPropagation()" />
 
-              <!-- دکمه سورت: همیشه دیده می‌شود -->
               <button type="button" class="px-1 h-7 border rounded-md hover:bg-gray-50 flex items-center gap-1"
                 (click)="orderBy('totalStopTime'); $event.stopPropagation()" title="مرتب‌سازی با شماره اعزام">
                 <span [class.opacity-30]="!(sortBy()?.propertyName === 'totalStopTime')" class="leading-none">
@@ -175,13 +161,15 @@
         </tr>
 
         <tr *ngFor="let r of rows(); let i = index" class="border-b hover:bg-gray-50 even:bg-blue-50"
-          (click)="openDetails(r)" tabindex="0" role="button" (keyup.enter)="openDetails(r)">
-          <td *ngFor="let c of columns; let ci = index" class="tdcell" [class.col-row]="ci === 0"
-            [class.text-center]="ci === 0" [class.col-station]="ci > 4">
-            {{ getCell(r, c.key) }}
+          (dblclick)="openDetails(r)" tabindex="0" role="button" (keyup.enter)="openDetails(r)">
+          <td *ngFor="let c of columns;
+           let ci = index" class="tdcell" [class.col-row]="ci === 0"
+            [class.text-center]="ci === 0" [class.col-station]="ci > 4  "
+            [innerHTML]="getCell(r, c.key)"
+            >
+            <!-- {{ getCell(r, c.key) }} -->
           </td>
         </tr>
-
 
         <tr *ngIf="!isLoading() && rows().length === 0">
           <td [attr.colspan]="columns.length" class="px-4 py-10 text-center text-gray-500">
@@ -191,6 +179,7 @@
       </tbody>
     </table>
   </div>
+
   <!-- ناوبری پایین -->
   <div class="flex items-center justify-center gap-4 mt-3 text-sm">
     <button class="px-3 h-8 border rounded-md disabled:opacity-50 hover:bg-gray-50 text-sm" (click)="goPrev()"
@@ -213,12 +202,5 @@
       </select>
       <span>در صفحه</span>
     </label>
-    <tr>
-
-
-
-    </tr>
   </div>
-
-
 </section>
